@@ -1,3 +1,34 @@
+# 03 - Duck Hunt IA (mira automática com visão computacional)
+
+> Este projeto é um **fork** do clássico [DuckHunt-JS](https://github.com/MattSurabian/DuckHunt-JS) adaptado para a disciplina. A documentação original do jogo está preservada abaixo. Esta seção explica **o que foi adicionado**: uma IA que joga sozinha usando **visão computacional**.
+
+## Contexto da disciplina
+
+O objetivo é demonstrar **inferência de um modelo de detecção de objetos no navegador** com TensorFlow.js. Um modelo **YOLOv5n** (já exportado em `machine-learning/yolov5n_web_model/`) roda em um **Web Worker** e "assiste" ao próprio jogo para mirar e atirar automaticamente.
+
+Como funciona (em `machine-learning/`):
+
+1. A cada 200ms, o frame atual do jogo é capturado do canvas do PixiJS e enviado ao worker (`main.js`).
+2. O `worker.js` carrega o modelo YOLOv5n, pré-processa a imagem (redimensiona para 640×640 e normaliza os pixels entre 0 e 1) e roda a inferência.
+3. Dentre as classes detectadas, filtra a classe **`kite`** (a "pipa", que representa o pato) acima de um limiar de confiança.
+4. Calcula o centro da caixa detectada e usa essa posição para posicionar a mira e disparar (`game.handleClick`).
+5. Um HUD (`layout.js`) mostra o score e as predições em tempo real.
+
+Ou seja: a IA não joga por regras codificadas — ela **enxerga** a tela e reage, como um jogador faria.
+
+## Como rodar
+
+```bash
+npm install
+npm start   # servidor local em http://localhost:8080 (com auto-rebuild)
+```
+
+Abra `http://localhost:8080` e observe a IA mirando e atirando sozinha. Para gerar um build manual, use `npm run build`.
+
+> Detalhes adicionais (build de assets de áudio/imagem, lint, etc.) estão na documentação original do jogo abaixo.
+
+---
+
 # DUCK HUNT JS v3.0
 
 [Play the game](https://duckhuntjs.com)

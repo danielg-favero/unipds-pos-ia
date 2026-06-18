@@ -1,5 +1,32 @@
 # Fundamentos de IA e LLMs para Programadores
 
+## Projetos
+
+Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu próprio `README.md` com contexto e instruções de execução.
+
+| # | Projeto | O que demonstra |
+|---|---------|-----------------|
+| 01 | [Tensores](./01-tensores/) | Tensores e treino de uma rede neural simples com TensorFlow.js no Node |
+| 02 | [Recomendação de E-commerce](./02-ecommerce-recomendations-with-tensorflowjs/) | Treino e recomendação no navegador (Web Worker + TensorFlow.js) |
+| 03 | [Duck Hunt IA](./03-duck-hunt-ia/) | Visão computacional: YOLOv5n mira e atira sozinho no jogo |
+| 04 | [Web AI](./04-web-ai/) | Prompt API nativa do navegador (LLM on-device com Gemini Nano) |
+| 05 | [Playwright MCP](./05-playwright-mcp/) | Geração de testes E2E a partir de prompts via Playwright MCP |
+| 06 | [Context7 MCP](./06-ctx7-mcp/) | Geração de código com docs atualizadas (Next.js + Better Auth) |
+| 07 | [Neo4j + RAG](./07-neo4j/) | Pipeline de RAG com busca vetorial no Neo4j + LLM via OpenRouter |
+
+## Índice de conceitos
+
+- [Conceitos básicos](#conceitos-básicos) — IA, Machine Learning, Deep Learning
+- [Tensores](#tensores)
+- [LLM](#llm) — GPT, geração de texto, configurações de `encoding`
+  - [Prompts que geram boas respostas](#prompts-que-geram-boas-respostas)
+  - [Padrão JSON vs. Padrão TOON](#padrão-json-vs-padrão-toon)
+- [IDEs para desenvolvimento usando IA](#ides-para-desenvolvimento-usando-ia)
+- [Agentes de IA](#agentes-de-ia)
+- [MCPs](#mcps) — Model Context Protocol
+- [Modelos abertos e fechados](#modelos-abertos-e-fechados) — open weights, sem censura, Ollama
+- [RAG](#rag) — Retrieval-Augmented Generation
+
 ## Conceitos básicos
 
 ### Inteligência artificial

@@ -1,39 +1,43 @@
-# E-commerce Recommendation System
+# 02 - Recomendação de E-commerce com TensorFlow.js
 
-A web application that displays user profiles and product listings, with the ability to track user purchases for future machine learning recommendations using TensorFlow.js.
+Aplicação web de e-commerce que **treina um modelo de recomendação no próprio navegador** com [TensorFlow.js](https://www.tensorflow.org/js), a partir do histórico de compras dos usuários.
 
-## Project Structure
+## Contexto
 
-- `index.html` - Main HTML file for the application
-- `index.js` - Entry point for the application
-- `view/` - Contains classes for managing the DOM and templates
-- `controller/` - Contains controllers to connect views and services
-- `service/` - Contains business logic for data handling
-- `data/` - Contains JSON files with user and product data
+Diferente do exemplo `01-tensores` (que roda no Node), aqui o treino e a inferência acontecem **no front-end**, em um Web Worker, para não travar a interface.
 
-## Setup and Run
+Fluxo da aplicação:
 
-1. Install dependencies:
-```
+1. Carrega usuários e produtos a partir dos JSONs em `data/`.
+2. Treina um modelo em um **Web Worker** (`src/workers/modelTrainingWorker.js`) usando os usuários e seu histórico de compras.
+3. Permite selecionar um usuário, ver seu perfil e compras passadas, e comprar produtos ("Buy Now"), atualizando o histórico.
+4. Usa o modelo treinado para **recomendar produtos** com base na semelhança entre usuários/compras.
+5. Visualiza o treino com o **tfjs-vis** (TFVisor), mostrando métricas como loss e accuracy.
+
+A arquitetura segue uma separação simples em camadas:
+
+- `src/view/` — manipulação do DOM e templates (`templates/`)
+- `src/controller/` — conecta views e serviços (usuário, produto, treino do modelo, TFVisor, worker)
+- `src/service/` — lógica de dados (usuários e produtos)
+- `src/workers/` — treino do modelo em background
+- `src/events/` — barramento de eventos da aplicação
+- `data/` — JSONs de usuários e produtos
+
+![demo](./demo.png)
+
+## Pré-requisitos
+
+- Node.js 22
+
+## Como rodar
+
+```bash
 npm install
-```
-
-2. Start the application:
-```
 npm start
 ```
 
-3. Open your browser and navigate to `http://localhost:8080`
+O `npm start` sobe um servidor estático com `browser-sync` (live reload). Acesse:
 
-## Features
-
-- User profile selection with details display
-- Past purchase history display
-- Product listing with "Buy Now" functionality
-- Purchase tracking using sessionStorage
-
-## Future Enhancements
-
-- TensorFlow.js-based recommendation engine
-- User similarity analysis
-- Product recommendation based on purchase history
+```
+http://localhost:3000
+```
