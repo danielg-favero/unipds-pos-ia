@@ -9,4 +9,9 @@ node_modules
 .DS_Store
 dist
 .vscode
+
+# Environment variables
 .env
+.env.local
+.env.production
+.env.development
