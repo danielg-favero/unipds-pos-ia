@@ -1,0 +1,11 @@
+# UNIPDS Templates folder
+templates
+
+# Projects folder
+projetos
+
+# General
+node_modules
+.DS_Store
+dist
+.vscode
