@@ -1,0 +1,47 @@
+<output id="output"></output>
+<!-- https://www.jsdelivr.com/package/npm/markdown -->
+<script src="https://cdn.jsdelivr.net/npm/markdown@0.5.0/lib/markdown.min.js"></script>
+
+<script>
+  const output = document.getElementById("output");
+
+  (async () => {
+    const params = await LanguageModel.params();
+
+    const temperature = params.defaultTemperature;
+    const topK = params.defaultTopK;
+
+    const initialPrompt = [
+      {
+        role: "system",
+        content:
+          "Você é um assistente de IA que responde de forma clara e objetiva",
+      },
+    ];
+
+    const question = "Quem inventou o javascript?";
+    output.innerText = "Gerando resposta...";
+
+    // Recomendado criar a sessão em memória para evitar ficar criando toda vez
+    const session = await LanguageModel.create({
+      expectedInputLanguages: ["pt"],
+      temperature,
+      topK,
+      initialPrompts,
+    });
+
+    const responseStream = await session.promptStreaming([
+      {
+        role: "user",
+        content: question,
+      },
+    ]);
+
+    output.innerText = "";
+    let fullText = "";
+    for await (const chunck of responseStream) {
+      fullText += chunck;
+      output.innerText = markdown.toHTML(fullText);
+    }
+  })();
+</script>
