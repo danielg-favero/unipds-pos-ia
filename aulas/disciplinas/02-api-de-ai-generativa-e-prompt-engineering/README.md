@@ -8,6 +8,7 @@ Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu pró
 |---|---------|-----------------|
 | 01 | [OpenRouter Gateway](./01-open-router-gateway/) | Gateway HTTP (Fastify) que roteia prompts para modelos via OpenRouter |
 | 02 | [LangChain + LangGraph](./02-langchain/) | Chatbot como grafo de estados com roteamento condicional entre nós |
+| 03 | [Medical Appointment](./03-medical-appointment/) | Agendamento de consultas com saídas estruturadas (Zod) e roteamento por intenção |
 
 ## Índice de conceitos
 
@@ -16,6 +17,7 @@ Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu pró
   - [Roteamento por provedor](#roteamento-por-provedor)
 - [LangChain](#langchain) — framework para aplicações com LLMs
   - [LangGraph](#langgraph) — orquestração como grafo de estados
+  - [Saídas estruturadas](#saídas-estruturadas) — respostas tipadas e validadas com Zod
   - [LangSmith](#langsmith) — observabilidade e tracing
 
 ## OpenRouter
@@ -78,6 +80,24 @@ O [LangGraph](https://langchain-ai.github.io/langgraphjs/) é a parte do ecossis
 - **Arestas condicionais (`conditional edges`)**: escolhem o próximo nó dinamicamente, com base no estado atual (roteamento).
 
 Isso permite fluxos com ramificações, ciclos e decisões — algo difícil de expressar com uma única chamada linear à LLM. Veja o projeto [02-langchain](./02-langchain/) para um exemplo completo.
+
+### Saídas estruturadas
+
+Por padrão uma LLM devolve **texto livre**, o que obriga a fazer _parsing_ frágil para extrair dados. Com **saídas estruturadas** (`structured output`), você descreve o formato esperado com um schema [Zod](https://zod.dev) e o modelo é forçado a responder exatamente nesse formato — já tipado e validado, sem alucinação de estrutura.
+
+No LangChain isso é feito criando um agente com uma estratégia de resposta a partir do schema:
+
+```ts
+const agent = createAgent({
+  model: llmModel,
+  tools: [],
+  responseFormat: providerStrategy(outputSchema), // schema Zod
+});
+
+const { structuredResponse } = await agent.invoke({ messages });
+```
+
+É a base para **classificar intenção** e **extrair entidades** de uma frase em linguagem natural. Veja o projeto [03-medical-appointment](./03-medical-appointment/), onde a mensagem do paciente vira um objeto com `intent`, profissional, data/hora e nome — usado para rotear e executar a ação.
 
 ### LangSmith
 
