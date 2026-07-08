@@ -4,11 +4,12 @@
 
 Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu próprio `README.md` com contexto e instruções de execução.
 
-| # | Projeto | O que demonstra |
-|---|---------|-----------------|
-| 01 | [OpenRouter Gateway](./01-open-router-gateway/) | Gateway HTTP (Fastify) que roteia prompts para modelos via OpenRouter |
-| 02 | [LangChain + LangGraph](./02-langchain/) | Chatbot como grafo de estados com roteamento condicional entre nós |
-| 03 | [Medical Appointment](./03-medical-appointment/) | Agendamento de consultas com saídas estruturadas (Zod) e roteamento por intenção |
+| #   | Projeto                                          | O que demonstra                                                                  |
+| --- | ------------------------------------------------ | -------------------------------------------------------------------------------- |
+| 01  | [OpenRouter Gateway](./01-open-router-gateway/)  | Gateway HTTP (Fastify) que roteia prompts para modelos via OpenRouter            |
+| 02  | [LangChain + LangGraph](./02-langchain/)         | Chatbot como grafo de estados com roteamento condicional entre nós               |
+| 03  | [Medical Appointment](./03-medical-appointment/) | Agendamento de consultas com saídas estruturadas (Zod) e roteamento por intenção |
+| 04  | [Song Recommendation](./04-song-recommendation/) | Recomendador com memória: histórico persistido, preferências e sumarização        |
 
 ## Índice de conceitos
 
@@ -19,6 +20,10 @@ Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu pró
   - [LangGraph](#langgraph) — orquestração como grafo de estados
   - [Saídas estruturadas](#saídas-estruturadas) — respostas tipadas e validadas com Zod
   - [LangSmith](#langsmith) — observabilidade e tracing
+- [Gerenciamento de memória](#gerenciamento-de-memória) — histórico e contexto entre conversas
+  - [Short Term memory](#short-term-memory) — histórico da thread (checkpointer)
+  - [Long Term memory](#long-term-memory) — preferências entre conversas (store)
+  - [Boas práticas](#boas-práticas) — sumarização para não estourar o contexto
 
 ## OpenRouter
 
@@ -102,3 +107,72 @@ const { structuredResponse } = await agent.invoke({ messages });
 ### LangSmith
 
 O [LangSmith](https://smith.langchain.com) é a plataforma de **observabilidade** do LangChain. Ele faz o _tracing_ de cada execução — registrando os passos do grafo, entradas/saídas de cada nó, tokens e latência — o que ajuda a depurar, avaliar e melhorar as aplicações. É habilitado por variáveis de ambiente (`LANGSMITH_API_KEY`, `LANGSMITH_TRACING_V2`, `LANGSMITH_PROJECT`).
+
+## Gerenciamento de memória
+
+O langchain / langgraph oferece ferramentas para salvar contexto e histórico de conversas para uso posterior. Existem dois tipos de memória: _Short-term_ e _Long-term_.
+
+### Short Term memory
+
+Memória que vive apenas no nível da thread principal do programa. Usado para armazenar o histórico da conversa
+
+- **Em desenvolvimento**: persiste em memória
+
+```ts
+import { MemorySaver, StateGraph } from "@langchain/langgraph";
+
+const checkpointer = new MemorySaver();
+
+const builder = new StateGraph(...);
+const graph = builder.compile({ checkpointer });
+
+await graph.invoke(
+  { messages: [{ role: "user", content: "hi! i am Bob" }] },
+  { configurable: { thread_id: "1" } }
+);
+```
+
+- **Em produção**: persiste em um banco de dados
+
+```ts
+import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
+
+const DB_URI = "postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable";
+const checkpointer = PostgresSaver.fromConnString(DB_URI);
+
+const builder = new StateGraph(...);
+const graph = builder.compile({ checkpointer });
+```
+
+### Long Term memory
+
+Usado para armazenar preferências do usuário ou da aplicação entre conversas
+
+- **Em desenvolvimento**: persiste em memória
+
+```ts
+import { InMemoryStore, StateGraph } from "@langchain/langgraph";
+
+const store = new InMemoryStore();
+
+const builder = new StateGraph(...);
+const graph = builder.compile({ store });
+```
+
+- **Em produção**: persiste em um banco de dados
+
+```ts
+import { PostgresStore } from "@langchain/langgraph-checkpoint-postgres/store";
+
+const DB_URI = "postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable";
+const store = PostgresStore.fromConnString(DB_URI);
+
+const builder = new StateGraph(...);
+const graph = builder.compile({ store });
+```
+
+### Boas práticas
+
+Chega um momento na vida do chat com o usuário em que a janela de contexto pode acabar estourando o limite da LLM. É preciso pensar se vale a pena manter o histórico todo ou **resumir** ele: um nó de sumarização condensa as mensagens antigas em um resumo (ou nas preferências do usuário) e remove-as do histórico, mantendo o contexto enxuto sem perder o que importa.
+
+Veja o projeto [04-song-recommendation](./04-song-recommendation/) para um exemplo completo dos dois tipos de memória em ação — histórico de conversa persistido (short-term), preferências estruturadas entre sessões (long-term) e sumarização automática quando a conversa fica longa.
