@@ -9,7 +9,8 @@ Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu pró
 | 01  | [OpenRouter Gateway](./01-open-router-gateway/)  | Gateway HTTP (Fastify) que roteia prompts para modelos via OpenRouter            |
 | 02  | [LangChain + LangGraph](./02-langchain/)         | Chatbot como grafo de estados com roteamento condicional entre nós               |
 | 03  | [Medical Appointment](./03-medical-appointment/) | Agendamento de consultas com saídas estruturadas (Zod) e roteamento por intenção |
-| 04  | [Song Recommendation](./04-song-recommendation/) | Recomendador com memória: histórico persistido, preferências e sumarização        |
+| 04  | [Song Recommendation](./04-song-recommendation/) | Recomendador com memória: histórico persistido, preferências e sumarização       |
+| 05  | [Safeguard & Prompt Injection](./05-safeguard-prompt-injection/) | Guardrails com modelo de safeguard que barram prompt injection antes do LLM      |
 
 ## Índice de conceitos
 
@@ -24,6 +25,9 @@ Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu pró
   - [Short Term memory](#short-term-memory) — histórico da thread (checkpointer)
   - [Long Term memory](#long-term-memory) — preferências entre conversas (store)
   - [Boas práticas](#boas-práticas) — sumarização para não estourar o contexto
+- [Proteção contra Prompt Injection](#proteção-contra-prompt-injection) — guardrails e defesa em profundidade
+  - [Prompt Injection](#prompt-injection) — manipular a saída do LLM pela entrada
+  - [Guardrails](#guardrails) — modelo de safeguard como gatekeeper
 
 ## OpenRouter
 
@@ -176,3 +180,20 @@ const graph = builder.compile({ store });
 Chega um momento na vida do chat com o usuário em que a janela de contexto pode acabar estourando o limite da LLM. É preciso pensar se vale a pena manter o histórico todo ou **resumir** ele: um nó de sumarização condensa as mensagens antigas em um resumo (ou nas preferências do usuário) e remove-as do histórico, mantendo o contexto enxuto sem perder o que importa.
 
 Veja o projeto [04-song-recommendation](./04-song-recommendation/) para um exemplo completo dos dois tipos de memória em ação — histórico de conversa persistido (short-term), preferências estruturadas entre sessões (long-term) e sumarização automática quando a conversa fica longa.
+
+## Proteção contra Prompt Injection
+
+### Prompt Injection
+
+Técnica em que prompts específicos são usados na entrada de dados para guiar o _output_ da LLM — geralmente para extrair informações confidenciais ou executar ações que o usuário não deveria poder realizar. Frases como _"IGNORE PREVIOUS INSTRUCTIONS..."_ ou _"you are now in maintenance mode"_ sobrescrevem as instruções do system prompt.
+
+O ponto central: **regras de segurança no system prompt não bastam**. Mesmo que o prompt diga "você NÃO pode ler arquivos para membros", o modelo pode ser convencido a ignorar isso. Instrução não é controle de acesso.
+
+### Guardrails
+
+A defesa é adicionar uma camada de **guardrail** que analisa a entrada do usuário **antes** de chegar ao LLM principal. Em vez de _regex_, usa-se um **modelo de safeguard** dedicado à moderação (ex.: `openai/gpt-oss-safeguard-20b` no OpenRouter), que classifica o prompt como `SAFE`/`UNSAFE`:
+
+- Se **seguro**, o fluxo segue para o chat normalmente.
+- Se **inseguro**, o fluxo é desviado para um nó de bloqueio e o LLM principal nunca vê o prompt malicioso.
+
+Isso é **defesa em profundidade**: combina regras no prompt + permissões por _role_ + o guardrail como _gatekeeper_. Veja o projeto [05-safeguard-prompt-injection](./05-safeguard-prompt-injection/) para um exemplo completo — com um modo `--unsafe` que desliga o guardrail e mostra o ataque passando.

@@ -4,15 +4,15 @@
 
 Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu próprio `README.md` com contexto e instruções de execução.
 
-| # | Projeto | O que demonstra |
-|---|---------|-----------------|
-| 01 | [Tensores](./01-tensores/) | Tensores e treino de uma rede neural simples com TensorFlow.js no Node |
-| 02 | [Recomendação de E-commerce](./02-ecommerce-recomendations-with-tensorflowjs/) | Treino e recomendação no navegador (Web Worker + TensorFlow.js) |
-| 03 | [Duck Hunt IA](./03-duck-hunt-ia/) | Visão computacional: YOLOv5n mira e atira sozinho no jogo |
-| 04 | [Web AI](./04-web-ai/) | Prompt API nativa do navegador (LLM on-device com Gemini Nano) |
-| 05 | [Playwright MCP](./05-playwright-mcp/) | Geração de testes E2E a partir de prompts via Playwright MCP |
-| 06 | [Context7 MCP](./06-ctx7-mcp/) | Geração de código com docs atualizadas (Next.js + Better Auth) |
-| 07 | [Neo4j + RAG](./07-neo4j/) | Pipeline de RAG com busca vetorial no Neo4j + LLM via OpenRouter |
+| #   | Projeto                                                                        | O que demonstra                                                        |
+| --- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| 01  | [Tensores](./01-tensores/)                                                     | Tensores e treino de uma rede neural simples com TensorFlow.js no Node |
+| 02  | [Recomendação de E-commerce](./02-ecommerce-recomendations-with-tensorflowjs/) | Treino e recomendação no navegador (Web Worker + TensorFlow.js)        |
+| 03  | [Duck Hunt IA](./03-duck-hunt-ia/)                                             | Visão computacional: YOLOv5n mira e atira sozinho no jogo              |
+| 04  | [Web AI](./04-web-ai/)                                                         | Prompt API nativa do navegador (LLM on-device com Gemini Nano)         |
+| 05  | [Playwright MCP](./05-playwright-mcp/)                                         | Geração de testes E2E a partir de prompts via Playwright MCP           |
+| 06  | [Context7 MCP](./06-ctx7-mcp/)                                                 | Geração de código com docs atualizadas (Next.js + Better Auth)         |
+| 07  | [Neo4j + RAG](./07-neo4j/)                                                     | Pipeline de RAG com busca vetorial no Neo4j + LLM via OpenRouter       |
 
 ## Índice de conceitos
 
@@ -220,6 +220,10 @@ Mastering Node.js Streams, "https://example3.com"
 ## MCPs
 
 Protocolo criado pela antropic cuja sigla significa `Model Context Protocol`. É usado para conectar LLMs a diferentes ferramentas (arquivos, bancos de dados, automações, etc.).
+
+### Diretório oficial de MCPs disponíveis
+
+[awesome-mcp-servers](https://github.com/punkpeye/awesome-mcp-servers)
 
 ### MCP para escrita de testes
 
