@@ -4,13 +4,15 @@
 
 Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu próprio `README.md` com contexto e instruções de execução.
 
-| #   | Projeto                                          | O que demonstra                                                                  |
-| --- | ------------------------------------------------ | -------------------------------------------------------------------------------- |
-| 01  | [OpenRouter Gateway](./01-open-router-gateway/)  | Gateway HTTP (Fastify) que roteia prompts para modelos via OpenRouter            |
-| 02  | [LangChain + LangGraph](./02-langchain/)         | Chatbot como grafo de estados com roteamento condicional entre nós               |
-| 03  | [Medical Appointment](./03-medical-appointment/) | Agendamento de consultas com saídas estruturadas (Zod) e roteamento por intenção |
-| 04  | [Song Recommendation](./04-song-recommendation/) | Recomendador com memória: histórico persistido, preferências e sumarização       |
+| #   | Projeto                                                          | O que demonstra                                                                  |
+| --- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 01  | [OpenRouter Gateway](./01-open-router-gateway/)                  | Gateway HTTP (Fastify) que roteia prompts para modelos via OpenRouter            |
+| 02  | [LangChain + LangGraph](./02-langchain/)                         | Chatbot como grafo de estados com roteamento condicional entre nós               |
+| 03  | [Medical Appointment](./03-medical-appointment/)                 | Agendamento de consultas com saídas estruturadas (Zod) e roteamento por intenção |
+| 04  | [Song Recommendation](./04-song-recommendation/)                 | Recomendador com memória: histórico persistido, preferências e sumarização       |
 | 05  | [Safeguard & Prompt Injection](./05-safeguard-prompt-injection/) | Guardrails com modelo de safeguard que barram prompt injection antes do LLM      |
+| 06  | [RAG Neo4j & Sales Analytics](./06-rag-neo4j-generative-ui/)     | RAG sobre grafo: pergunta → Cypher gerado por LLM → execução → resposta analítica, com decomposição multi-etapa e auto-correção |
+| 07  | [Document Analysis](./07-doc-analysis/)                         | Q&A multimodal sobre PDF: documento inteiro enviado como `image_url` para um modelo com visão, sem chunking/embeddings |
 
 ## Índice de conceitos
 
@@ -28,6 +30,10 @@ Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu pró
 - [Proteção contra Prompt Injection](#proteção-contra-prompt-injection) — guardrails e defesa em profundidade
   - [Prompt Injection](#prompt-injection) — manipular a saída do LLM pela entrada
   - [Guardrails](#guardrails) — modelo de safeguard como gatekeeper
+- [RAG sobre grafos (Neo4j)](#rag-sobre-grafos-neo4j) — text-to-Cypher em vez de busca vetorial
+  - [Text-to-Cypher](#text-to-cypher) — traduzir pergunta em query a partir do schema real
+  - [Auto-correção e decomposição de perguntas](#auto-correção-e-decomposição-de-perguntas) — corrigir queries e quebrar perguntas complexas
+- [Modelos multimodais](#modelos-multimodais) — enviar documentos direto para modelos com visão
 
 ## OpenRouter
 
@@ -197,3 +203,48 @@ A defesa é adicionar uma camada de **guardrail** que analisa a entrada do usuá
 - Se **inseguro**, o fluxo é desviado para um nó de bloqueio e o LLM principal nunca vê o prompt malicioso.
 
 Isso é **defesa em profundidade**: combina regras no prompt + permissões por _role_ + o guardrail como _gatekeeper_. Veja o projeto [05-safeguard-prompt-injection](./05-safeguard-prompt-injection/) para um exemplo completo — com um modo `--unsafe` que desliga o guardrail e mostra o ataque passando.
+
+## RAG sobre grafos (Neo4j)
+
+O RAG (_Retrieval-Augmented Generation_) tradicional recupera **trechos de texto** por similaridade vetorial. Quando o dado já está estruturado como um **grafo** (entidades e relacionamentos, como alunos/cursos/compras), outra abordagem é traduzir a pergunta em uma **query** e deixar o banco de grafos (ex.: [Neo4j](https://neo4j.com)) fazer a agregação — e só então usar o LLM para transformar o resultado estruturado de volta em texto.
+
+### Text-to-Cypher
+
+O LLM recebe o **schema real do grafo** (via `Neo4jGraph.getSchema()`) e regras de negócio do domínio, e gera a query [Cypher](https://neo4j.com/docs/cypher-manual/) correspondente à pergunta — sem acesso direto ao banco, sem alucinar nomes de propriedades:
+
+```ts
+const schema = await neo4jService.getSchema();
+const systemPrompt = await getSystemPrompt(schema, SALES_CONTEXT);
+const { data } = await llmClient.generateStructured(systemPrompt, question, CypherQuerySchema);
+// data.query → query Cypher pronta para executar
+```
+
+### Auto-correção e decomposição de perguntas
+
+Duas técnicas tornam o pipeline mais robusto:
+
+- **Auto-correção**: se a query falhar na execução (validada com `EXPLAIN` antes), o erro é reenviado ao LLM, que gera uma versão corrigida — com um limite de tentativas para evitar loop infinito.
+- **Decomposição de perguntas complexas**: um nó de planejamento classifica a pergunta como simples ou complexa; perguntas que exigem múltiplas agregações dependentes (ex.: _"compare a receita entre cursos com alta e baixa conclusão"_) são quebradas em sub-perguntas executadas em sequência, e os resultados são sintetizados numa resposta única.
+
+Veja o projeto [06-rag-neo4j-generative-ui](./06-rag-neo4j-generative-ui/) para o pipeline completo: geração de Cypher → execução/validação → correção condicional → resposta analítica com perguntas de follow-up.
+
+## Modelos multimodais
+
+Alguns modelos aceitam **conteúdo multimodal** na mensagem — não só texto, mas imagens (e, por extensão, documentos como PDF) — usando o mesmo formato de mensagem do chat, com uma parte `text` e uma parte `image_url`:
+
+```ts
+new HumanMessage({
+  content: [
+    { type: "text", text: question },
+    { type: "image_url", image_url: { url: `data:application/pdf;base64,${documentBase64}` } },
+  ],
+});
+```
+
+Isso permite responder perguntas sobre um documento **sem pipeline de RAG** (sem chunking, embeddings ou vector store): o documento inteiro é enviado ao modelo em cada requisição, o que funciona bem para arquivos curtos mas não escala para documentos muito longos. Veja o projeto [07-doc-analysis](./07-doc-analysis/), onde um PDF é enviado via upload multipart e analisado por um modelo com suporte a visão.
+
+## Monitoramento de apps de IA
+
+É possível monitorar o uso das LLMs e criar alertas para apps que usam LLMs (aumento do preço por token, usuários mal intensionados, aplicação em loop, etc.)
+
+Plataformas como a [`Langfuse`](https://langfuse.com/) permitem esse monitoramento.
