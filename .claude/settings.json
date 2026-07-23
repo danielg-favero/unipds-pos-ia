@@ -4,7 +4,8 @@
       "Bash(npm view *)",
       "Bash(node -e \"const p=require\\('./node_modules/@langchain/langgraph/package.json'\\); console.log\\(Object.keys\\(p.exports\\)\\)\")",
       "Bash(npm ls *)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(node --input-type=module -e \"import\\('./src/graph/factory.ts'\\).then\\(m=>console.log\\('factory loaded OK, exports:', Object.keys\\(m\\)\\)\\).catch\\(e=>{console.error\\('FAIL:', e.message\\); process.exit\\(1\\)}\\)\")"
     ]
   }
 }
