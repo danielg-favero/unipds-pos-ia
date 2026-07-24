@@ -4,10 +4,13 @@
 
 Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu próprio `README.md` com contexto e instruções de execução.
 
-| #   | Projeto                                            | O que demonstra                                                                          |
-| --- | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| 01  | [Multiple MCP Tools](./01-multiple-mcp-tools/)      | Agente LangGraph consumindo vários servidores MCP (MongoDB, filesystem) via stdio + tool própria |
-| 02  | [Skills](./02-skills/)                              | Instalação e uso de Agent Skills (`npx skills`) para processamento de vídeo com FFmpeg      |
+| #   | Projeto                                                    | O que demonstra                                                                                  |
+| --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 01  | [Multiple MCP Tools](./01-multiple-mcp-tools/)             | Agente LangGraph consumindo vários servidores MCP (MongoDB, filesystem) via stdio + tool própria |
+| 02  | [Skills](./02-skills/)                                     | Instalação e uso de Agent Skills (`npx skills`) para processamento de vídeo com FFmpeg           |
+| 03  | [MCP Server from Scratch](./03-mcp-server-from-scratch/)   | Servidor MCP próprio com tools, resource e prompt, testado via SDK de cliente e Inspector        |
+
+Os três formam uma progressão: **consumir** servidores MCP → dar contexto ao agente sem servidor algum → **construir** o servidor.
 
 ## Índice de conceitos
 
@@ -18,6 +21,10 @@ Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu pró
 - [Agents](#agents)
 - [Skills](#skills)
   - [Skills vs. MCP vs. Agents](#skills-vs-mcp-vs-agents)
+- [Criando um MCP do zero](#criando-um-mcp-do-zero)
+  - [As três primitivas](#as-três-primitivas)
+  - [Transportes](#transportes)
+  - [Inspecionando e testando](#inspecionando-e-testando)
 
 ## O que é o MCP
 
@@ -73,8 +80,42 @@ Veja o projeto [02-skills](./02-skills/) para um exemplo de instalação e uso d
 
 Os três resolvem problemas parecidos (dar mais capacidade a um agente de IA), mas em camadas diferentes:
 
-| Conceito   | O que é                                                    | Onde roda                                          |
-| ---------- | ----------------------------------------------------------- | ----------------------------------------------------- |
-| **MCP**    | Protocolo para conectar o modelo a **serviços externos** (bancos de dados, APIs, sistemas de arquivos) | Servidor separado (processo `stdio` ou HTTP)         |
-| **Skill**  | **Conhecimento/instruções** empacotadas (Markdown + exemplos) que o agente lê e segue          | Arquivo local (`SKILL.md`), carregado no contexto     |
-| **Agent**  | Um **prompt especializado** selecionado para executar uma tarefa, que pode usar MCPs e Skills   | Definição de agente (config/prompt)                   |
+| Conceito  | O que é                                                                                                | Onde roda                                         |
+| --------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| **MCP**   | Protocolo para conectar o modelo a **serviços externos** (bancos de dados, APIs, sistemas de arquivos) | Servidor separado (processo `stdio` ou HTTP)      |
+| **Skill** | **Conhecimento/instruções** empacotadas (Markdown + exemplos) que o agente lê e segue                  | Arquivo local (`SKILL.md`), carregado no contexto |
+| **Agent** | Um **prompt especializado** selecionado para executar uma tarefa, que pode usar MCPs e Skills          | Definição de agente (config/prompt)               |
+
+## Criando um MCP do zero
+
+A biblioteca oficial para criar servidores MCP próprios é o [`@modelcontextprotocol/sdk`](https://github.com/modelcontextprotocol/typescript-sdk). Ele cuida do protocolo (JSON-RPC, handshake, negociação de capabilities) e deixa para você apenas o registro do que o servidor expõe.
+
+### As três primitivas
+
+Um servidor MCP pode expor três coisas, e a diferença entre elas está em **quem decide usá-las**:
+
+| Primitiva    | O que é                                                        | Controlado por                                       |
+| ------------ | -------------------------------------------------------------- | ---------------------------------------------------- |
+| **Tool**     | Função executável com schema de entrada e de saída             | **Modelo** — chama quando julga necessário           |
+| **Resource** | Documento/contexto que o servidor disponibiliza para leitura   | **Aplicação cliente** — decide o que entra no contexto |
+| **Prompt**   | Template de mensagem parametrizado                             | **Usuário** — normalmente via slash command na UI    |
+
+Na prática, quase todo servidor começa só com tools; resources e prompts entram quando o modelo precisa de contexto estável (documentação do domínio) ou quando há fluxos repetitivos que valem virar atalho para o usuário.
+
+Duas convenções que valem a pena seguir ao registrar uma tool:
+
+- **Declarar `outputSchema`** além do `inputSchema`, devolvendo `structuredContent` — o cliente consome a saída tipada em vez de fazer parse de texto livre.
+- **Não lançar exceção em erro de negócio**: devolver `{ isError: true, content: [...] }` com uma mensagem descritiva faz o erro chegar ao modelo como contexto, permitindo que ele se corrija sozinho.
+
+### Transportes
+
+- **`stdio`** — o cliente sobe o servidor como processo filho e conversa por stdin/stdout. É o formato dos servidores que rodam localmente (o caso do [03](./03-mcp-server-from-scratch/) e dos servidores usados no [01](./01-multiple-mcp-tools/)). Atenção: como o stdout **é** o canal do protocolo, logs precisam ir para `stderr`.
+- **HTTP (Streamable HTTP)** — o servidor roda remoto e atende vários clientes, com respostas em streaming via SSE. É o formato dos MCPs hospedados por terceiros.
+
+### Inspecionando e testando
+
+O [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) (`npx @modelcontextprotocol/inspector <comando do servidor>`) sobe o servidor, faz o handshake e permite listar e chamar tools, resources e prompts numa UI de browser — validando o servidor sem gastar chamada de LLM.
+
+![MCP Inspect](assets/mcp_inspect.png)
+
+Para testes automatizados, o mesmo SDK traz o **`Client`**: os testes sobem o servidor pelo transporte real e chamam as tools como um agente faria, o que testa o contrato do protocolo e não só a função por baixo. Veja [03-mcp-server-from-scratch](./03-mcp-server-from-scratch/) para a implementação completa.

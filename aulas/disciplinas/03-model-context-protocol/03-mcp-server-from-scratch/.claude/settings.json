@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Applications/Antigravity IDE.app/Contents/Resources/app/extensions/antigravity/**)",
+      "Bash(timeout 150 grep -rl \"mcp_config.json\" .)",
+      "Bash(timeout 120 grep -aoh \"[/~.a-zA-Z0-9_-]\\\\{0,40\\\\}mcp_config\\\\.json\" dist/extension.js bin/language_server_macos_arm)",
+      "Bash(timeout 60 grep -ac \"mcpServers\" dist/extension.js)",
+      "Bash(grep -aoh \"[/~.a-zA-Z0-9_-]\\\\{0,45\\\\}mcp_config\\\\.json\" dist/extension.js)",
+      "Bash(grep -aoh \"mcp[a-zA-Z_.]\\\\{0,25\\\\}\" dist/extension.js)",
+      "Bash(grep -ao \"mcpConfigFilePathSegments:.\\\\{0,80\\\\}\" dist/extension.js)",
+      "Bash(grep -ao \"ideName[=:].\\\\{0,60\\\\}\" dist/extension.js)",
+      "Read(//Users/danielg.favero/.gemini/**)",
+      "Bash(grep -o \"mcp[a-zA-Z]*[^,]\\\\{0,60\\\\}\" \"/Applications/Antigravity IDE.app/Contents/Resources/app/product.json\" | head; echo \"=== search all app for literal ===\"; grep -rl \"mcp_config.json\" \"/Applications/Antigravity IDE.app/Contents/Resources/app/out\" \"/Applications/Antigravity IDE.app/Contents/Resources/app/product.json\" 2>/dev/null | head)",
+      "Read(//Applications/Antigravity IDE.app/Contents/Resources/app/**)",
+      "Read(//Applications/Antigravity IDE.app/Contents/Resources/app/out/**)",
+      "Bash(node src/index.ts)"
+    ],
+    "additionalDirectories": [
+      "/Users/danielg.favero/.gemini/config"
+    ]
+  }
+}
