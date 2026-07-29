@@ -9,7 +9,7 @@
     "infra:down": "docker-compose down --volumes"
   },
   "keywords": [],
-  "author": "erickwendel",
+  "author": "danielg.favero",
   "license": "MIT",
   "description": "",
   "engines": {

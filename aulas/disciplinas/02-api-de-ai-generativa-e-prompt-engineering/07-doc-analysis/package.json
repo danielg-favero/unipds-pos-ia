@@ -17,7 +17,7 @@
     "pdf-analysis",
     "openrouter"
   ],
-  "author": "erickwendel",
+  "author": "danielg.favero",
   "license": "MIT",
   "dependencies": {
     "@fastify/multipart": "^9.0.3",

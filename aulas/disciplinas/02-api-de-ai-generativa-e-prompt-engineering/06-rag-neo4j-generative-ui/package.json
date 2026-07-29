@@ -25,7 +25,7 @@
     "openrouter",
     "ollama"
   ],
-  "author": "erickwendel",
+  "author": "danielg.favero",
   "license": "MIT",
   "dependencies": {
     "@langchain/community": "^1.1.17",

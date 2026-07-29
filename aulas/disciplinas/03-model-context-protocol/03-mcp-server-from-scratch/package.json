@@ -11,7 +11,7 @@
     "test:dev": "node --inspect --test --watch tests/**/*.test.ts"
   },
   "keywords": [],
-  "author": "erickwendel",
+  "author": "danielg.favero",
   "license": "ISC",
   "type": "module",
   "engines": {

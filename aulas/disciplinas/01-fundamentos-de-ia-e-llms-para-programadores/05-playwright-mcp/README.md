@@ -6,7 +6,7 @@ Demonstração de como usar o **Playwright MCP** para **gerar testes E2E automat
 
 A ideia é conectar um agente de IA (no VS Code/Claude) ao [Playwright MCP](https://github.com/microsoft/playwright-mcp). O agente abre o navegador de verdade, executa os passos descritos no prompt e só então emite um teste Playwright em TypeScript que reflete o que aconteceu.
 
-App alvo dos testes: <https://erickwendel.github.io/vanilla-js-web-app-example/>
+App alvo dos testes: <https://danielg.favero.github.io/vanilla-js-web-app-example/>
 
 Estrutura:
 

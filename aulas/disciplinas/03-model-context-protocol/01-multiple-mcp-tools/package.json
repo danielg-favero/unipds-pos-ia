@@ -18,7 +18,7 @@
     "prompt-chaining",
     "openrouter"
   ],
-  "author": "erickwendel",
+  "author": "danielg.favero",
   "license": "MIT",
   "dependencies": {
     "@langchain/core": "^1.2.3",

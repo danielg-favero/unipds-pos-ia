@@ -1,15 +1,15 @@
-import { defineConfig, devices } from '@playwright/test'
+import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: "./tests",
   timeout: 5000,
   use: {
-    baseURL: 'https://erickwendel.github.io',
+    baseURL: "https://danielg.favero.github.io",
   },
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
     },
   ],
-})
+});

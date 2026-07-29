@@ -4,11 +4,11 @@
 
 Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu próprio `README.md` com contexto e instruções de execução.
 
-| #   | Projeto                                                    | O que demonstra                                                                                  |
-| --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| 01  | [Multiple MCP Tools](./01-multiple-mcp-tools/)             | Agente LangGraph consumindo vários servidores MCP (MongoDB, filesystem) via stdio + tool própria |
-| 02  | [Skills](./02-skills/)                                     | Instalação e uso de Agent Skills (`npx skills`) para processamento de vídeo com FFmpeg           |
-| 03  | [MCP Server from Scratch](./03-mcp-server-from-scratch/)   | Servidor MCP próprio com tools, resource e prompt, testado via SDK de cliente e Inspector        |
+| #   | Projeto                                                  | O que demonstra                                                                                  |
+| --- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 01  | [Multiple MCP Tools](./01-multiple-mcp-tools/)           | Agente LangGraph consumindo vários servidores MCP (MongoDB, filesystem) via stdio + tool própria |
+| 02  | [Skills](./02-skills/)                                   | Instalação e uso de Agent Skills (`npx skills`) para processamento de vídeo com FFmpeg           |
+| 03  | [MCP Server from Scratch](./03-mcp-server-from-scratch/) | Servidor MCP próprio com tools, resource e prompt, testado via SDK de cliente e Inspector        |
 
 Os três formam uma progressão: **consumir** servidores MCP → dar contexto ao agente sem servidor algum → **construir** o servidor.
 
@@ -94,11 +94,11 @@ A biblioteca oficial para criar servidores MCP próprios é o [`@modelcontextpro
 
 Um servidor MCP pode expor três coisas, e a diferença entre elas está em **quem decide usá-las**:
 
-| Primitiva    | O que é                                                        | Controlado por                                       |
-| ------------ | -------------------------------------------------------------- | ---------------------------------------------------- |
-| **Tool**     | Função executável com schema de entrada e de saída             | **Modelo** — chama quando julga necessário           |
-| **Resource** | Documento/contexto que o servidor disponibiliza para leitura   | **Aplicação cliente** — decide o que entra no contexto |
-| **Prompt**   | Template de mensagem parametrizado                             | **Usuário** — normalmente via slash command na UI    |
+| Primitiva    | O que é                                                      | Controlado por                                         |
+| ------------ | ------------------------------------------------------------ | ------------------------------------------------------ |
+| **Tool**     | Função executável com schema de entrada e de saída           | **Modelo** — chama quando julga necessário             |
+| **Resource** | Documento/contexto que o servidor disponibiliza para leitura | **Aplicação cliente** — decide o que entra no contexto |
+| **Prompt**   | Template de mensagem parametrizado                           | **Usuário** — normalmente via slash command na UI      |
 
 Na prática, quase todo servidor começa só com tools; resources e prompts entram quando o modelo precisa de contexto estável (documentação do domínio) ou quando há fluxos repetitivos que valem virar atalho para o usuário.
 
@@ -119,3 +119,9 @@ O [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) (`npx @m
 ![MCP Inspect](assets/mcp_inspect.png)
 
 Para testes automatizados, o mesmo SDK traz o **`Client`**: os testes sobem o servidor pelo transporte real e chamam as tools como um agente faria, o que testa o contrato do protocolo e não só a função por baixo. Veja [03-mcp-server-from-scratch](./03-mcp-server-from-scratch/) para a implementação completa.
+
+## Integrando MCP com APIs
+
+Outra aplicação dos MCPS é integrar eles a APIs, principalmente se elas forem legadas, para disponibilizar ações para usuários dentro do sistema.
+
+> É importante ressaltar que essa integração não deve ser um pra um, ou seja, a ideia não é transformar cada endpoint da api em uma chamada no MCP. A ideia é abstrair ações para o usuário utilizar.

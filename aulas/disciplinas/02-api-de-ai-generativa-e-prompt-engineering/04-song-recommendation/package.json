@@ -23,7 +23,7 @@
     "song-recommender",
     "openrouter"
   ],
-  "author": "erickwendel",
+  "author": "danielg.favero",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.19.7",

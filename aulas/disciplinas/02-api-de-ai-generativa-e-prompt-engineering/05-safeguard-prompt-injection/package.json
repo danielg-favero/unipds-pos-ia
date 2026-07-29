@@ -6,7 +6,7 @@
   "main": "src/index.ts",
   "scripts": {
     "chat": "node --experimental-strip-types --env-file .env src/index.ts",
-    "chat:admin": "node --experimental-strip-types --watch --env-file .env src/index.ts --user erickwendel --message 'What is the version in the package.json?'",
+    "chat:admin": "node --experimental-strip-types --watch --env-file .env src/index.ts --user danielg.favero --message 'What is the version in the package.json?'",
     "chat:member:safe": "node --experimental-strip-types --env-file .env src/index.ts --user ananeri --prompt-path 'prompts/user/read-env.txt'",
     "chat:member:unsafe:env": "node --experimental-strip-types --env-file .env src/index.ts --user ananeri --unsafe --prompt-path 'prompts/user/read-env.txt'",
     "chat:member:unsafe:package": "node --experimental-strip-types --env-file .env src/index.ts --user ananeri --unsafe --prompt-path 'prompts/user/read-package-version.txt'",
@@ -20,7 +20,7 @@
     "guardrails",
     "openrouter"
   ],
-  "author": "erickwendel",
+  "author": "danielg.favero",
   "license": "MIT",
   "dependencies": {
     "@langchain/core": "^1.2.2",

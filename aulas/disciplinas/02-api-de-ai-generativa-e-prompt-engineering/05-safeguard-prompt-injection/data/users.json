@@ -1,6 +1,6 @@
 {
-  "erickwendel": {
-    "username": "erickwendel",
+  "danielg.favero": {
+    "username": "danielg.favero",
     "role": "admin",
     "permissions": ["read_package", "execute_commands"],
     "displayName": "Erick Wendel"
