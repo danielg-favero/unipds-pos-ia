@@ -9,8 +9,9 @@ Exemplos práticos desenvolvidos ao longo da disciplina. Cada pasta tem seu pró
 | 01  | [Multiple MCP Tools](./01-multiple-mcp-tools/)           | Agente LangGraph consumindo vários servidores MCP (MongoDB, filesystem) via stdio + tool própria |
 | 02  | [Skills](./02-skills/)                                   | Instalação e uso de Agent Skills (`npx skills`) para processamento de vídeo com FFmpeg           |
 | 03  | [MCP Server from Scratch](./03-mcp-server-from-scratch/) | Servidor MCP próprio com tools, resource e prompt, testado via SDK de cliente e Inspector        |
+| 04  | [API as MCP](./04-api-as-mcp/)                           | Servidor MCP que embrulha uma API REST existente (Fastify + MongoDB), expondo ações ao agente    |
 
-Os três formam uma progressão: **consumir** servidores MCP → dar contexto ao agente sem servidor algum → **construir** o servidor.
+Os quatro formam uma progressão: **consumir** servidores MCP → dar contexto ao agente sem servidor algum → **construir** o servidor → **embrulhar um sistema que já existe** com ele.
 
 ## Índice de conceitos
 
@@ -25,6 +26,9 @@ Os três formam uma progressão: **consumir** servidores MCP → dar contexto ao
   - [As três primitivas](#as-três-primitivas)
   - [Transportes](#transportes)
   - [Inspecionando e testando](#inspecionando-e-testando)
+- [Integrando MCP com APIs](#integrando-mcp-com-apis)
+  - [Endpoints não são ações](#endpoints-não-são-ações)
+  - [Onde colocar cada coisa](#onde-colocar-cada-coisa)
 
 ## O que é o MCP
 
@@ -122,6 +126,27 @@ Para testes automatizados, o mesmo SDK traz o **`Client`**: os testes sobem o se
 
 ## Integrando MCP com APIs
 
-Outra aplicação dos MCPS é integrar eles a APIs, principalmente se elas forem legadas, para disponibilizar ações para usuários dentro do sistema.
+Outra aplicação dos MCPs é integrá-los a APIs, principalmente se elas forem legadas, para disponibilizar ações para usuários dentro do sistema. O servidor MCP entra como uma **camada na frente da API**, consumindo-a por HTTP como qualquer outro cliente — sem tocar no sistema existente e sem acessar o banco direto, o que preserva as validações e regras que já estão lá.
 
-> É importante ressaltar que essa integração não deve ser um pra um, ou seja, a ideia não é transformar cada endpoint da api em uma chamada no MCP. A ideia é abstrair ações para o usuário utilizar.
+Veja o projeto [04-api-as-mcp](./04-api-as-mcp/) para um exemplo completo: uma API de CRUD de clientes (Fastify + MongoDB) e um servidor MCP separado que a expõe como tools, resource e prompt.
+
+### Endpoints não são ações
+
+> É importante ressaltar que essa integração não deve ser um pra um, ou seja, a ideia não é transformar cada endpoint da api em uma chamada no MCP. A ideia é abstrair ações para o usuário utilizar. Cada ação no MCP pode executar diversos endpoints se necessário.
+
+Um agente não pensa em endpoints, pensa em intenções. Uma ação como _"achar o cliente"_ pode virar `GET /customers/:id` quando o id é conhecido, ou `GET /customers` + filtro quando o usuário só sabe o nome — para o modelo continua sendo **uma** tool (`get_customer`). O mesmo vale no sentido inverso: quirks da API (um `PUT` que responde 404 quando nada mudou, paginação, um fluxo de três chamadas para uma operação só) devem ser **escondidos** pela ação, não repassados ao modelo.
+
+Um bom teste: se o nome da tool descreve um verbo do negócio, provavelmente está certo; se descreve um método HTTP, provavelmente é um endpoint disfarçado.
+
+### Onde colocar cada coisa
+
+Embrulhar um sistema externo pede uma camada a mais do que o servidor do [03](./03-mcp-server-from-scratch/) (que só separava regra de negócio da casca MCP):
+
+| Camada           | Responsabilidade                                                     |
+| ---------------- | -------------------------------------------------------------------- |
+| `domain`         | Schemas Zod e tipos — reaproveitados como `inputSchema`/`outputSchema` |
+| `infrastructure` | O cliente HTTP: o único lugar que sabe que a API é REST e onde ela vive |
+| `application`    | As **ações**: onde uma intenção se traduz em uma ou mais chamadas     |
+| `mcp`            | Só tradução — argumentos do modelo em chamadas de serviço e de volta   |
+
+O resource ganha importância nesse cenário: publicar um "mapa" do sistema embrulhado (base URL, endpoints, formato dos recursos) dá ao agente o contexto de domínio antes de ele escolher a tool.
