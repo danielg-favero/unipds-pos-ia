@@ -7,9 +7,9 @@
   "scripts": {
     "chat": "node --experimental-strip-types --env-file .env src/index.ts",
     "chat:admin": "node --experimental-strip-types --watch --env-file .env src/index.ts --user danielg.favero --message 'What is the version in the package.json?'",
-    "chat:member:safe": "node --experimental-strip-types --env-file .env src/index.ts --user ananeri --prompt-path 'prompts/user/read-env.txt'",
-    "chat:member:unsafe:env": "node --experimental-strip-types --env-file .env src/index.ts --user ananeri --unsafe --prompt-path 'prompts/user/read-env.txt'",
-    "chat:member:unsafe:package": "node --experimental-strip-types --env-file .env src/index.ts --user ananeri --unsafe --prompt-path 'prompts/user/read-package-version.txt'",
+    "chat:member:safe": "node --experimental-strip-types --env-file .env src/index.ts --user amanda --prompt-path 'prompts/user/read-env.txt'",
+    "chat:member:unsafe:env": "node --experimental-strip-types --env-file .env src/index.ts --user amanda --unsafe --prompt-path 'prompts/user/read-env.txt'",
+    "chat:member:unsafe:package": "node --experimental-strip-types --env-file .env src/index.ts --user amanda --unsafe --prompt-path 'prompts/user/read-package-version.txt'",
     "langgraph:serve": "npx @langchain/langgraph-cli dev"
   },
   "keywords": [

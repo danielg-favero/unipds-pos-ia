@@ -69,18 +69,14 @@ async function main(): Promise<void> {
       console.error(
         'Usage: npm run chat -- --user <username> --message "your message" [--unsafe]',
       );
-      console.error(
-        "Available users: danielg.favero (admin), ananeri (member)",
-      );
+      console.error("Available users: danielg.favero (admin), amanda (member)");
       process.exit(1);
     }
     const prompt = message ?? readFileSync(promptPath!, "utf-8");
     const user = getUser(username);
     if (!user) {
       console.error(`❌ Error: User "${username}" not found`);
-      console.error(
-        "Available users: danielg.favero (admin), ananeri (member)",
-      );
+      console.error("Available users: danielg.favero (admin), amanda (member)");
       process.exit(1);
     }
 
