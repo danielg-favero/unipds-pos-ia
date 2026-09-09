@@ -5,7 +5,7 @@ import { ValidationError } from "../domain/errors.js";
 export const ArgsSchema = z.object({
   strategies: z.array(z.string().min(1)).default([]),
   maxIterations: z.number().int().min(1).max(20).default(8),
-  store: z.enum(["json", "memory", "mysql"]).default("json"),
+  store: z.enum(["json", "memory", "mysql", "sqlite"]).default("json"),
   request: z.string().min(1, "informe o pedido do plantonista"),
 });
 
@@ -13,7 +13,7 @@ export type ArenaArgs = z.infer<typeof ArgsSchema>;
 
 export const usage = (available: readonly string[]): string =>
   [
-    'Uso: npm run arena -- [--strategies a,b] [--max-iterations N] [--store json|memory|mysql] "<pedido>"',
+    'Uso: npm run arena -- [--strategies a,b] [--max-iterations N] [--store json|memory|mysql|sqlite] "<pedido>"',
     `Estratégias disponíveis: ${available.join(", ")}`,
   ].join("\n");
 

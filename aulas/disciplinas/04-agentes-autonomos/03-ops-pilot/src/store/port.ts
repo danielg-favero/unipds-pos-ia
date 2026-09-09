@@ -1,4 +1,4 @@
-import type { Alert, AlertStatus, Incident, Service, Severity } from "../domain/types.js";
+import type { Alert, AlertStatus, Incident, Runbook, Service, Severity } from "../domain/types.js";
 
 export type OpenIncidentInput = {
   readonly title: string;
@@ -6,9 +6,12 @@ export type OpenIncidentInput = {
   readonly severity: Severity;
 };
 
+export type IncidentListFilter = "open" | "resolved" | "all";
+
 /**
- * Única fronteira de I/O de dados do núcleo. Dois adaptadores a satisfazem:
- * `MemoryOpsStore` (padrão, testes) e `SequelizeOpsStore` (MySQL).
+ * Única fronteira de I/O de dados do núcleo. Adaptadores que a satisfazem:
+ * `MemoryOpsStore` (padrão, testes e bench), `SqliteOpsStore` (persistência real) e
+ * `SequelizeOpsStore` (MySQL, legado).
  */
 export interface OpsStore {
   /** Sem `status`, devolve todos. Sempre ordenado por `id`. */
@@ -19,4 +22,11 @@ export interface OpsStore {
   /** Lança `IncidentNotFoundError` ou `IncidentAlreadyResolvedError`. */
   resolveIncident(id: string): Promise<Incident>;
   getIncident(id: string): Promise<Incident | undefined>;
+  /** Sem `filter` ou `"open"`: só abertos. Sempre ordenado por `id`. */
+  listIncidents(filter?: IncidentListFilter): Promise<readonly Incident[]>;
+  /**
+   * `undefined` quando o serviço existe mas não tem runbook cadastrado.
+   * Lança `ServiceNotFoundError` quando o serviço não existe.
+   */
+  getRunbook(serviceId: string): Promise<Runbook | undefined>;
 }

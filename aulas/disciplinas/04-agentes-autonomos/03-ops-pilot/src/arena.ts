@@ -11,6 +11,10 @@ const makeStore = async (kind: ArenaArgs["store"]): Promise<OpsStore> => {
   // json é o padrão: o modelo lê o que já existe e o que ele cria persiste.
   if (kind === "json") return new JsonOpsStore();
   if (kind === "memory") return new MemoryOpsStore();
+  if (kind === "sqlite") {
+    const { SqliteOpsStore } = await import("./store/sqlite/sqlite-ops-store.js");
+    return new SqliteOpsStore();
+  }
   const { createSequelizeStore } = await import("./store/sequelize/store.js");
   return createSequelizeStore();
 };

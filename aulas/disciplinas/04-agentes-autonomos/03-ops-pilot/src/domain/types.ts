@@ -26,6 +26,13 @@ export type Incident = {
   readonly serviceId: string;
   readonly severity: Severity;
   readonly status: IncidentStatus;
+  readonly resolvedAt: string | null;
+  readonly summary: string | null;
+};
+
+export type Runbook = {
+  readonly serviceId: string;
+  readonly content: string;
 };
 
 /** Ordem de gravidade, da mais grave para a menos grave. */

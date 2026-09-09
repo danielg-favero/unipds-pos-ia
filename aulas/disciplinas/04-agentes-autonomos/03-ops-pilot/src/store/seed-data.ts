@@ -1,6 +1,10 @@
-import type { Alert, Service } from "../domain/types.js";
+import type { Alert, Runbook, Service } from "../domain/types.js";
 
-/** Fonte única de verdade do estado inicial: usada pelo store em memória e pelo seed do MySQL. */
+/**
+ * Fonte única de verdade do cenário "Mercadinho": usada pelo store em memória, pelo bench e pelo
+ * seed do MySQL (legado). O seed do SQLite (`src/store/sqlite/seed.ts`) usa `MERCADINHO_SERVICES`,
+ * o subconjunto de 5 serviços pedido para o cenário de demonstração.
+ */
 
 export const SEED_SERVICES: readonly Service[] = [
   { id: "checkout-api", name: "Checkout API" },
@@ -10,6 +14,12 @@ export const SEED_SERVICES: readonly Service[] = [
   { id: "notification-gateway", name: "Notification Gateway" },
   { id: "catalog-service", name: "Catalog Service" },
 ];
+
+/** Os 5 serviços do cenário "Mercadinho" pedido para o seed do SQLite — exclui `catalog-service`,
+ * que não é referenciado por nenhum alerta do seed e existe hoje só para o bench (cenário c2). */
+export const MERCADINHO_SERVICES: readonly Service[] = SEED_SERVICES.filter(
+  (service) => service.id !== "catalog-service",
+);
 
 export const SEED_ALERTS: readonly Alert[] = [
   {
@@ -53,5 +63,29 @@ export const SEED_ALERTS: readonly Alert[] = [
     severity: "medium",
     status: "resolved",
     summary: "Pico de timeouts no gateway de cartão",
+  },
+];
+
+export const SEED_RUNBOOKS: readonly Runbook[] = [
+  {
+    serviceId: "checkout-api",
+    content:
+      "1. Verifique a taxa de erro 5xx no dashboard do checkout.\n" +
+      "2. Confirme se o gateway de pagamento está respondendo.\n" +
+      "3. Se a taxa de erro persistir acima de 10% por 5min, abra incidente sev1 e acione o time de checkout.",
+  },
+  {
+    serviceId: "payments-worker",
+    content:
+      "1. Verifique o tamanho da fila de pagamentos.\n" +
+      "2. Confirme se os workers estão saudáveis (health check).\n" +
+      "3. Se a fila crescer continuamente por mais de 10min, escale os workers e abra incidente.",
+  },
+  {
+    serviceId: "auth-service",
+    content:
+      "1. Verifique a latência p95 de login no dashboard de auth.\n" +
+      "2. Confirme se o serviço de sessão/token está saudável.\n" +
+      "3. Se a latência ultrapassar o limite por 5min, abra incidente e acione o time de auth.",
   },
 ];

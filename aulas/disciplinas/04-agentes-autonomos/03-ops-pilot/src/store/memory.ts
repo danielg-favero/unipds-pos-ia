@@ -3,9 +3,9 @@ import {
   IncidentNotFoundError,
   ServiceNotFoundError,
 } from "../domain/errors.js";
-import type { Alert, AlertStatus, Incident, Service } from "../domain/types.js";
-import type { OpenIncidentInput, OpsStore } from "./port.js";
-import { SEED_ALERTS, SEED_SERVICES } from "./seed-data.js";
+import type { Alert, AlertStatus, Incident, Runbook, Service } from "../domain/types.js";
+import type { IncidentListFilter, OpenIncidentInput, OpsStore } from "./port.js";
+import { SEED_ALERTS, SEED_RUNBOOKS, SEED_SERVICES } from "./seed-data.js";
 
 /**
  * Adaptador em memória: padrão do arena e único store usado nos testes.
@@ -17,12 +17,16 @@ export class MemoryOpsStore implements OpsStore {
   #incidents: Incident[] = [];
   #nextIncident = 1;
 
+  readonly #runbooks: readonly Runbook[];
+
   constructor(
     services: readonly Service[] = SEED_SERVICES,
     alerts: readonly Alert[] = SEED_ALERTS,
+    runbooks: readonly Runbook[] = SEED_RUNBOOKS,
   ) {
     this.#services = [...services];
     this.#alerts = [...alerts];
+    this.#runbooks = [...runbooks];
   }
 
   async listServices(): Promise<readonly Service[]> {
@@ -45,6 +49,8 @@ export class MemoryOpsStore implements OpsStore {
       serviceId: input.serviceId,
       severity: input.severity,
       status: "open",
+      resolvedAt: null,
+      summary: null,
     };
     this.#nextIncident += 1;
     this.#incidents = [...this.#incidents, incident];
@@ -56,7 +62,12 @@ export class MemoryOpsStore implements OpsStore {
     if (current === undefined) throw new IncidentNotFoundError(id);
     if (current.status === "resolved") throw new IncidentAlreadyResolvedError(id);
 
-    const resolved: Incident = { ...current, status: "resolved" };
+    const resolved: Incident = {
+      ...current,
+      status: "resolved",
+      resolvedAt: new Date().toISOString(),
+      summary: current.summary,
+    };
     this.#incidents = this.#incidents.map((incident) =>
       incident.id === id ? resolved : incident,
     );
@@ -67,8 +78,17 @@ export class MemoryOpsStore implements OpsStore {
     return this.#incidents.find((incident) => incident.id === id);
   }
 
-  /** Somente para inspeção em testes; não faz parte da porta. */
-  async listIncidents(): Promise<readonly Incident[]> {
-    return [...this.#incidents];
+  /** Sem `filter` ou `"open"`: só abertos. Sempre ordenado por `id`. */
+  async listIncidents(filter: IncidentListFilter = "open"): Promise<readonly Incident[]> {
+    return this.#incidents
+      .filter((incident) => filter === "all" || incident.status === filter)
+      .toSorted((a, b) => a.id.localeCompare(b.id));
+  }
+
+  async getRunbook(serviceId: string): Promise<Runbook | undefined> {
+    if (!this.#services.some((service) => service.id === serviceId)) {
+      throw new ServiceNotFoundError(serviceId);
+    }
+    return this.#runbooks.find((runbook) => runbook.serviceId === serviceId);
   }
 }

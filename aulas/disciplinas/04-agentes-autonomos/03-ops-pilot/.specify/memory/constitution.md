@@ -1,3 +1,13 @@
+<!--
+Sync Impact Report
+- Version change: 1.0.0 → 1.1.0
+- Modified principles: none renamed
+- Modified sections: Stack (persistência trocada de MySQL/Sequelize para SQLite via node:sqlite)
+- Added sections: none
+- Removed sections: none
+- Templates requiring updates: none tracked in this repo beyond constitution.md
+- Follow-up TODOs: none
+-->
 # OpsPilot Constitution
 
 ## Core Principles
@@ -22,7 +32,12 @@ Funções puras por padrão; efeitos colaterais ficam isolados na camada de stor
 
 ## Stack
 
-Node 24 LTS, TypeScript ESM (`strict: true`), Zod, `node:test` via `tsx`, Express com MySQL (Sequelize), LangChain/LangGraph sobre OpenRouter.
+Node 24 LTS, TypeScript ESM (`strict: true`), Zod, `node:test` via `tsx`, Express, LangChain/LangGraph sobre OpenRouter.
+
+Persistência é SQLite via `node:sqlite` (`DatabaseSync`), sem banco de dados externo. Caminho do
+arquivo configurável por `OPSPILOT_DB` (default `./data/opspilot.db`); testes usam `:memory:`.
+DDL é idempotente (criado no construtor do store) e toda query usa prepared statements — nunca SQL
+concatenado a partir de entrada externa.
 
 ## Fluxo de Desenvolvimento
 
@@ -32,4 +47,4 @@ Mudanças relevantes passam por `/specs.specify` → `/plan` → `/task` → `/i
 
 Esta constitution é a referência máxima do projeto e supersede outras práticas. Alterações exigem documentação da mudança, aprovação humana e atualização de `specs/constitution.md` em paralelo. Todo PR/spec deve verificar conformidade com estes princípios.
 
-**Version**: 1.0.0 | **Ratified**: 2026-08-27 | **Last Amended**: 2026-08-27
+**Version**: 1.1.0 | **Ratified**: 2026-08-27 | **Last Amended**: 2026-09-09

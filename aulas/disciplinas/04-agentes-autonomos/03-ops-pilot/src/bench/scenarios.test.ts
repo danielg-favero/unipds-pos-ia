@@ -13,6 +13,8 @@ const incident = (over: Partial<Incident>): Incident => ({
   serviceId: "checkout-api",
   severity: "high",
   status: "open",
+  resolvedAt: null,
+  summary: null,
   ...over,
 });
 

@@ -6,6 +6,7 @@ import {
   IncidentAlreadyResolvedError,
   IncidentNotFoundError,
   ServiceNotFoundError,
+  UnsupportedByStoreError,
   ValidationError,
 } from "../domain/errors.js";
 import {
@@ -15,9 +16,10 @@ import {
   type Alert,
   type AlertStatus,
   type Incident,
+  type Runbook,
   type Service,
 } from "../domain/types.js";
-import type { OpenIncidentInput, OpsStore } from "./port.js";
+import type { IncidentListFilter, OpenIncidentInput, OpsStore } from "./port.js";
 import { SEED_ALERTS, SEED_SERVICES } from "./seed-data.js";
 
 export const DEFAULT_DB_PATH = resolve(process.cwd(), "data", "ops-db.json");
@@ -41,6 +43,8 @@ const IncidentSchema = z.object({
   serviceId: z.string().min(1),
   severity: z.enum(SEVERITIES),
   status: z.enum(INCIDENT_STATUSES),
+  resolvedAt: z.string().nullable().default(null),
+  summary: z.string().nullable().default(null),
 });
 
 export const DatabaseSchema = z.object({
@@ -124,6 +128,8 @@ export class JsonOpsStore implements OpsStore {
         serviceId: input.serviceId,
         severity: input.severity,
         status: "open",
+        resolvedAt: null,
+        summary: null,
       };
       await writeDatabase(this.path, { ...db, incidents: [...db.incidents, incident] });
       return incident;
@@ -136,7 +142,11 @@ export class JsonOpsStore implements OpsStore {
       if (current === undefined) throw new IncidentNotFoundError(id);
       if (current.status === "resolved") throw new IncidentAlreadyResolvedError(id);
 
-      const resolved: Incident = { ...current, status: "resolved" };
+      const resolved: Incident = {
+        ...current,
+        status: "resolved",
+        resolvedAt: new Date().toISOString(),
+      };
       await writeDatabase(this.path, {
         ...db,
         incidents: db.incidents.map((incident) => (incident.id === id ? resolved : incident)),
@@ -149,8 +159,16 @@ export class JsonOpsStore implements OpsStore {
     return this.#serialize(async (db) => db.incidents.find((incident) => incident.id === id));
   }
 
-  async listIncidents(): Promise<readonly Incident[]> {
-    return this.#serialize(async (db) => [...db.incidents]);
+  async listIncidents(filter: IncidentListFilter = "open"): Promise<readonly Incident[]> {
+    return this.#serialize(async (db) =>
+      db.incidents
+        .filter((incident) => filter === "all" || incident.status === filter)
+        .toSorted((a, b) => a.id.localeCompare(b.id)),
+    );
+  }
+
+  async getRunbook(_serviceId: string): Promise<Runbook | undefined> {
+    throw new UnsupportedByStoreError("getRunbook (adaptador JSON não modela runbooks; use --store sqlite)");
   }
 
   /** Enfileira a operação para que leitura e escrita nunca se cruzem. */

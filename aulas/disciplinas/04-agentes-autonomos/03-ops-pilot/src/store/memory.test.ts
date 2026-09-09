@@ -143,6 +143,57 @@ describe("MemoryOpsStore — resolveIncident", () => {
       () => store.resolveIncident(opened.id),
       IncidentAlreadyResolvedError,
     );
-    assert.equal((await store.listIncidents()).length, 1);
+    assert.equal((await store.listIncidents("all")).length, 1);
+  });
+});
+
+describe("MemoryOpsStore — listIncidents", () => {
+  const withOpenAndResolved = async (): Promise<MemoryOpsStore> => {
+    const store = new MemoryOpsStore();
+    await store.openIncident({ title: "aberto", serviceId: "checkout-api", severity: "low" });
+    const toResolve = await store.openIncident({
+      title: "vai ser resolvido",
+      serviceId: "auth-service",
+      severity: "medium",
+    });
+    await store.resolveIncident(toResolve.id);
+    return store;
+  };
+
+  it("sem filtro devolve só abertos", async () => {
+    const store = await withOpenAndResolved();
+    const incidents = await store.listIncidents();
+    assert.equal(incidents.length, 1);
+    assert.equal(incidents[0]?.status, "open");
+  });
+
+  it("filtro 'resolved' devolve só resolvidos", async () => {
+    const store = await withOpenAndResolved();
+    const incidents = await store.listIncidents("resolved");
+    assert.equal(incidents.length, 1);
+    assert.equal(incidents[0]?.status, "resolved");
+  });
+
+  it("filtro 'all' devolve todos", async () => {
+    const store = await withOpenAndResolved();
+    assert.equal((await store.listIncidents("all")).length, 2);
+  });
+});
+
+describe("MemoryOpsStore — getRunbook", () => {
+  it("devolve o conteúdo de um serviço com runbook cadastrado", async () => {
+    const store = new MemoryOpsStore();
+    const runbook = await store.getRunbook("checkout-api");
+    assert.ok(typeof runbook?.content === "string" && runbook.content.length > 0);
+  });
+
+  it("devolve undefined para serviço sem runbook cadastrado", async () => {
+    const store = new MemoryOpsStore();
+    assert.equal(await store.getRunbook("search-indexer"), undefined);
+  });
+
+  it("lança ServiceNotFoundError para serviço inexistente", async () => {
+    const store = new MemoryOpsStore();
+    await assert.rejects(() => store.getRunbook("servico-fantasma"), ServiceNotFoundError);
   });
 });

@@ -43,6 +43,8 @@ export class IncidentModel extends Model<
   declare serviceId: string;
   declare severity: Severity;
   declare status: IncidentStatus;
+  declare resolvedAt: string | null;
+  declare summary: string | null;
 }
 
 export type OpsModels = {
@@ -91,6 +93,8 @@ export function initModels(sequelize: Sequelize): OpsModels {
       },
       severity: { type: DataTypes.ENUM(...SEVERITIES), allowNull: false },
       status: { type: DataTypes.ENUM(...INCIDENT_STATUSES), allowNull: false },
+      resolvedAt: { type: DataTypes.DATE, allowNull: true },
+      summary: { type: DataTypes.STRING(500), allowNull: true },
     },
     {
       sequelize,

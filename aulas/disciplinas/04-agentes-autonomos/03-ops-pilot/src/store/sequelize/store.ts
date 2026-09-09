@@ -4,9 +4,10 @@ import {
   IncidentAlreadyResolvedError,
   IncidentNotFoundError,
   ServiceNotFoundError,
+  UnsupportedByStoreError,
 } from "../../domain/errors.js";
-import type { Alert, AlertStatus, Incident, Service } from "../../domain/types.js";
-import type { OpenIncidentInput, OpsStore } from "../port.js";
+import type { Alert, AlertStatus, Incident, Runbook, Service } from "../../domain/types.js";
+import type { IncidentListFilter, OpenIncidentInput, OpsStore } from "../port.js";
 import { createSequelize } from "./connection.js";
 import { initModels, type OpsModels } from "./models.js";
 
@@ -59,6 +60,7 @@ export class SequelizeOpsStore implements OpsStore {
     if (row.status === "resolved") throw new IncidentAlreadyResolvedError(id);
 
     row.status = "resolved";
+    row.resolvedAt = new Date().toISOString();
     await row.save();
     return this.#toIncident(row);
   }
@@ -66,6 +68,18 @@ export class SequelizeOpsStore implements OpsStore {
   async getIncident(id: string): Promise<Incident | undefined> {
     const row = await this.models.Incident.findByPk(id);
     return row === null ? undefined : this.#toIncident(row);
+  }
+
+  async listIncidents(filter: IncidentListFilter = "open"): Promise<readonly Incident[]> {
+    const rows = await this.models.Incident.findAll({
+      ...(filter === "all" ? {} : { where: { status: filter } }),
+      order: [["id", "ASC"]],
+    });
+    return rows.map((row) => this.#toIncident(row));
+  }
+
+  async getRunbook(_serviceId: string): Promise<Runbook | undefined> {
+    throw new UnsupportedByStoreError("getRunbook (adaptador MySQL não modela runbooks; use --store sqlite)");
   }
 
   async close(): Promise<void> {
@@ -79,6 +93,8 @@ export class SequelizeOpsStore implements OpsStore {
       serviceId: row.serviceId,
       severity: row.severity,
       status: row.status,
+      resolvedAt: row.resolvedAt,
+      summary: row.summary,
     };
   }
 }

@@ -9,7 +9,8 @@
     "arena": "tsx --env-file-if-exists=.env src/arena.ts",
     "seed": "tsx --env-file-if-exists=.env src/scripts/seed.ts",
     "bench": "tsx --env-file-if-exists=.env src/bench.ts",
-    "test": "node --import tsx --test src/**/*.test.ts",
+    "mcp": "tsx --env-file-if-exists=.env src/mcp/server.ts",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
@@ -19,6 +20,7 @@
     "@langchain/core": "^1.2.9",
     "@langchain/langgraph": "^1.4.13",
     "@langchain/openai": "^1.5.10",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "express": "^5.2.1",
     "mysql2": "^3.24.2",
     "sequelize": "^6.37.8",

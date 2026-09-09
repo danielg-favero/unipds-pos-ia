@@ -37,6 +37,13 @@ export class IterationLimitError extends DomainError {
   }
 }
 
+/** Operação da porta que um adaptador específico não suporta (ex.: runbooks fora do SQLite). */
+export class UnsupportedByStoreError extends DomainError {
+  constructor(readonly operation: string) {
+    super(`Operação não suportada por este adaptador: ${operation}`);
+  }
+}
+
 export class UnknownStrategyError extends DomainError {
   constructor(
     readonly requested: string,
