@@ -280,3 +280,26 @@ ou direto no pasta do projeto
 ```bash
 specify init .
 ```
+
+## Memória de agentes
+
+É uma gestão de contexto entre os agentes.
+
+### Histórico de conversa persistente
+
+É o ato de persistir dados de conversa com o usuário em banco de dados e utilizá-los novamente para novas conversas
+
+### Refletor de aprendizado
+
+É uma chamada extra depois de cada resposta, que resume numa frase durável, o que vale a pena lembrar sem ninguém cadastrar nada.
+
+### Esquecimento
+
+Uma ferramenta que apaga, a pedido do usuário, o que o sistema aprendeu dele
+
+### Tipos de memória
+
+- **Conversa curta**: Conversa em andamento (working memory)
+- **Conversa longa**: Memória que sobrevive em disco. Ex: Arquivos `.md` para consulta (`instructions.md`)
+- **Memória Episódica**: Diário do que aconteceu e na ordem que aconteceu
+- **Memória semântica**: Fatos e preferências do usuário guardados como embeddings

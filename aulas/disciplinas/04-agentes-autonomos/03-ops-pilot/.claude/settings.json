@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npm run *)",
-      "Bash(npm test *)"
+      "Bash(npm test *)",
+      "Read(//Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/04-agentes-antônomos/03-ops-pilot/src/http/**)"
     ]
   }
 }

@@ -10,6 +10,7 @@
     "seed": "tsx --env-file-if-exists=.env src/scripts/seed.ts",
     "bench": "tsx --env-file-if-exists=.env src/bench.ts",
     "mcp": "tsx --env-file-if-exists=.env src/mcp/server.ts",
+    "http": "tsx --env-file-if-exists=.env src/http/server.ts",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },
