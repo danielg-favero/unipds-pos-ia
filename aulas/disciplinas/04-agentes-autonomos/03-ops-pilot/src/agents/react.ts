@@ -7,7 +7,7 @@ import { finishRun } from "../domain/strategy.js";
 import { toTrace } from "./from-messages.js";
 import { RunTracker } from "./metrics.js";
 import { createModel } from "./model.js";
-import { makeTools } from "./tools.js";
+import { makeMemoryTools, makeTools } from "./tools.js";
 
 const SYSTEM_PROMPT = [
   "Você é o OpsPilot, copiloto de plantão de produção.",
@@ -26,21 +26,43 @@ export const reactStrategy: ReasoningStrategy = {
   name: "react",
 
   async run(input: StrategyInput): Promise<StrategyRun> {
-    const tracker = new RunTracker();
+    const history = input.history ?? [];
+    const memories = input.memories ?? [];
+    const tracker = new RunTracker(history.length);
+
+    const memoryTools =
+      input.memoryStore && input.userId ? makeMemoryTools(input.memoryStore, input.userId) : [];
 
     const agent = createReactAgent({
       llm: createModel(),
-      tools: makeTools(input.store),
+      tools: [...makeTools(input.store), ...memoryTools],
       prompt: SYSTEM_PROMPT,
       version: "v2",
     });
 
     // Acumulado fora do try: se o limite estourar, o trace parcial sobrevive.
     let messages: BaseMessage[] = [];
+    // Memórias e histórico entram como mensagens iniciais para dar contexto ao
+    // modelo, mas ficam fora do trace: só a troca da requisição atual é reportada.
+    const memoryMessage =
+      memories.length === 0
+        ? []
+        : [
+            {
+              role: "system",
+              content: `Fatos memorizados sobre este usuário:\n${memories.map((fact) => `- ${fact}`).join("\n")}`,
+            },
+          ];
+    const initialMessages = [
+      ...memoryMessage,
+      ...history.map((message) => ({ role: message.role, content: message.content })),
+      { role: "user", content: input.request },
+    ];
+    const offset = memoryMessage.length + history.length;
 
     try {
       const stream = await agent.stream(
-        { messages: [{ role: "user", content: input.request }] },
+        { messages: initialMessages },
         {
           streamMode: "values",
           // Guardrail: nada de loop infinito.
@@ -53,7 +75,7 @@ export const reactStrategy: ReasoningStrategy = {
         messages = state.messages;
       }
 
-      const { events, answer } = toTrace(messages);
+      const { events, answer } = toTrace(messages.slice(offset));
       const concluded = answer !== "";
 
       return finishRun(
@@ -68,7 +90,7 @@ export const reactStrategy: ReasoningStrategy = {
       // Estouro de limite ou falha do provedor viram resposta parcial com o
       // trace e as métricas acumulados — `run` nunca rejeita (obrigação S2).
       return finishRun(
-        toTrace(messages).events,
+        toTrace(messages.slice(offset)).events,
         `Execução interrompida: ${describeProviderError(error)}`,
         true,
         tracker.snapshot(),

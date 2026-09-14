@@ -20,11 +20,11 @@ after(async () => {
 const freshFile = (): string => join(dir, `db-${(counter += 1)}.db`);
 
 describe("seed — cenário Mercadinho (US4)", () => {
-  it("um store novo nasce com 5 serviços, 6 alertas (3 firing/3 resolved) e 3 runbooks", async () => {
+  it("um store novo nasce com 6 serviços, 6 alertas (3 firing/3 resolved) e 3 runbooks", async () => {
     const store = new SqliteOpsStore(":memory:");
     const services = await store.listServices();
     const alerts = await store.listAlerts();
-    assert.equal(services.length, 5);
+    assert.equal(services.length, 6);
     assert.equal(alerts.length, 6);
     assert.equal((await store.listAlerts("firing")).length, 3);
     assert.equal((await store.listAlerts("resolved")).length, 3);

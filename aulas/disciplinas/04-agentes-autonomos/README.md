@@ -301,5 +301,13 @@ Uma ferramenta que apaga, a pedido do usuário, o que o sistema aprendeu dele
 
 - **Conversa curta**: Conversa em andamento (working memory)
 - **Conversa longa**: Memória que sobrevive em disco. Ex: Arquivos `.md` para consulta (`instructions.md`)
-- **Memória Episódica**: Diário do que aconteceu e na ordem que aconteceu
+- **Memória Episódica**: Diário do que aconteceu e na ordem que aconteceu. Fluxo de uma memória episódica
+
+```typescript
+const history = // recurar o histórico de mensagens
+const result = // Injeta o histórico no contexto
+
+// Restante da execuçãi
+```
+
 - **Memória semântica**: Fatos e preferências do usuário guardados como embeddings

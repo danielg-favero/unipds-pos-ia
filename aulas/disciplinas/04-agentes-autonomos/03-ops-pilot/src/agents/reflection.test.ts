@@ -26,7 +26,7 @@ function fakeStrategy(answers: readonly string[]): ReasoningStrategy & { calls: 
         { type: "observation", ok: true, result: { alerts: [] } },
         answerEvent(answer),
       ];
-      return { answer, trace, metrics: { llmCalls: 1, latencyMs: 1 } };
+      return { answer, trace, metrics: { llmCalls: 1, latencyMs: 1, historyMessages: 0 } };
     },
   };
   return strategy;

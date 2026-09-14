@@ -15,7 +15,7 @@ import { toTrace } from "./from-messages.js";
 import { RunTracker } from "./metrics.js";
 import { createModel } from "./model.js";
 import { describeProviderError } from "./provider-errors.js";
-import { makeTools } from "./tools.js";
+import { makeMemoryTools, makeTools } from "./tools.js";
 
 /** Teto rígido de passos executados, independente do limite de iterações (FR-023). */
 export const MAX_STEPS = 8;
@@ -153,18 +153,46 @@ export function createPlanAndExecuteStrategy(
     name: opts.name ?? "plan-and-execute",
 
     async run(input: StrategyInput): Promise<StrategyRun> {
-      const tracker = new RunTracker();
+      const history = input.history ?? [];
+      const memories = input.memories ?? [];
+      const tracker = new RunTracker(history.length);
       const runConfig = { callbacks: [tracker.counter] };
       const model = createModel();
+
+      // Sem array de mensagens no grafo (state.input é uma string única):
+      // memórias e histórico entram como transcript textual prefixado ao
+      // pedido, visto por planner/executor/replanner via state.input, sem
+      // novos nós no grafo.
+      const memoryBlock =
+        memories.length === 0
+          ? []
+          : ["Fatos memorizados sobre este usuário:", ...memories.map((fact) => `- ${fact}`), ""];
+      const historyBlock =
+        history.length === 0
+          ? []
+          : [
+              "Histórico da conversa:",
+              ...history.map(
+                (message) => `${message.role === "user" ? "Plantonista" : "OpsPilot"}: ${message.content}`,
+              ),
+              "",
+            ];
+      const request =
+        memoryBlock.length === 0 && historyBlock.length === 0
+          ? input.request
+          : [...memoryBlock, ...historyBlock, `Pedido atual: ${input.request}`].join("\n");
 
       // Sem retry de propósito: as respostas vazias observadas eram 429 de quota,
       // e retentar um 429 só queima cota e mascara a causa em um TypeError do SDK.
       const structured = <T extends z.ZodType>(schema: T) =>
         model.withStructuredOutput(schema);
 
+      const memoryTools =
+        input.memoryStore && input.userId ? makeMemoryTools(input.memoryStore, input.userId) : [];
+
       const executorAgent = createReactAgent({
         llm: model,
-        tools: makeTools(input.store),
+        tools: [...makeTools(input.store), ...memoryTools],
         prompt: EXECUTOR_PROMPT,
         version: "v2",
       });
@@ -270,7 +298,7 @@ export function createPlanAndExecuteStrategy(
           : "executor";
 
       // Acumulado fora do try: se algo estourar, o trace parcial sobrevive.
-      let final: State = { input: input.request, plan: [], done: [], answer: "", events: [] };
+      let final: State = { input: request, plan: [], done: [], answer: "", events: [] };
 
       try {
         // Nomes de nó não podem colidir com as chaves de estado ("plan", "answer"...).
@@ -289,7 +317,7 @@ export function createPlanAndExecuteStrategy(
               .compile();
 
         const stream = await graph.stream(
-          { input: input.request },
+          { input: request },
           {
             ...runConfig,
             streamMode: "values",

@@ -4,8 +4,10 @@ import { z } from "zod";
 export const chatRequestSchema = z
   .object({
     message: z.string().min(1),
+    userId: z.string().min(1),
     strategy: z.string().min(1).optional(),
     reflect: z.boolean().optional().default(false),
+    conversation: z.string().min(1).optional(),
   })
   .strict();
 

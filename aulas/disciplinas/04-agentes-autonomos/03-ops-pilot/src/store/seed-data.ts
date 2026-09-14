@@ -1,9 +1,8 @@
 import type { Alert, Runbook, Service } from "../domain/types.js";
 
 /**
- * Fonte única de verdade do cenário "Mercadinho": usada pelo store em memória, pelo bench e pelo
- * seed do MySQL (legado). O seed do SQLite (`src/store/sqlite/seed.ts`) usa `MERCADINHO_SERVICES`,
- * o subconjunto de 5 serviços pedido para o cenário de demonstração.
+ * Fonte única de verdade do cenário "Mercadinho": usada pelo store em memória, pelo bench, pelo
+ * seed do SQLite (`src/store/sqlite/seed.ts`) e pelo seed do MySQL (legado).
  */
 
 export const SEED_SERVICES: readonly Service[] = [
@@ -15,11 +14,9 @@ export const SEED_SERVICES: readonly Service[] = [
   { id: "catalog-service", name: "Catalog Service" },
 ];
 
-/** Os 5 serviços do cenário "Mercadinho" pedido para o seed do SQLite — exclui `catalog-service`,
- * que não é referenciado por nenhum alerta do seed e existe hoje só para o bench (cenário c2). */
-export const MERCADINHO_SERVICES: readonly Service[] = SEED_SERVICES.filter(
-  (service) => service.id !== "catalog-service",
-);
+/** Os serviços do cenário "Mercadinho" semeados no SQLite — hoje, todos os `SEED_SERVICES`
+ * (inclui `catalog-service`, também referenciado pelo bench, cenário c2). */
+export const MERCADINHO_SERVICES: readonly Service[] = SEED_SERVICES;
 
 export const SEED_ALERTS: readonly Alert[] = [
   {

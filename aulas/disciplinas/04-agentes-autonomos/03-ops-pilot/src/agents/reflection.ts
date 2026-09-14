@@ -108,6 +108,7 @@ export function runReflection(
       const trace: TraceEvent[] = [];
       let request = input.request;
       let lastRun: StrategyRun | undefined;
+      const historyMessages = input.history?.length ?? 0;
 
       for (let attempt = 0; attempt <= maxReflection; attempt += 1) {
         const runBase = await base.run({ ...input, request });
@@ -128,7 +129,7 @@ export function runReflection(
             trace,
             runBase.answer,
             !verdict.approved,
-            { llmCalls, latencyMs: Date.now() - startedAt },
+            { llmCalls, latencyMs: Date.now() - startedAt, historyMessages },
           );
         }
 
@@ -142,7 +143,7 @@ export function runReflection(
         trace,
         fallback.answer,
         true,
-        { llmCalls, latencyMs: Date.now() - startedAt },
+        { llmCalls, latencyMs: Date.now() - startedAt, historyMessages },
       );
     },
   };

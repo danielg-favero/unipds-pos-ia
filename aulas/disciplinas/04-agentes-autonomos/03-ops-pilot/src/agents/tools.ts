@@ -1,8 +1,9 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 
-import { errorMessage, isDomainError } from "../domain/errors.js";
+import { DomainError, errorMessage, isDomainError } from "../domain/errors.js";
 import { SEVERITIES } from "../domain/types.js";
+import type { MemoryStore } from "../memory/memory-store.js";
 import type { OpsStore } from "../store/port.js";
 
 export const listAlertsSchema = z.object({
@@ -51,6 +52,13 @@ export const consultarRunbookSchema = z.object({
     .describe(
       "Identificador do serviço cadastrado (ex.: 'checkout-api') cujo runbook será consultado.",
     ),
+});
+
+export const forgetPreferenceSchema = z.object({
+  description: z
+    .string()
+    .min(1)
+    .describe("Descrição em linguagem natural do que o usuário quer esquecer."),
 });
 
 export const checkProviderStatusSchema = z.object({
@@ -213,6 +221,47 @@ export function makeTools(store: OpsStore) {
 }
 
 export type OpsTools = ReturnType<typeof makeTools>;
+
+/**
+ * Tool(s) de gerenciamento de memória, ligadas a um `MemoryStore` e a um
+ * `userId` (regra T5, análoga a `makeTools(store)`). `forget_preference`
+ * resolve a descrição em linguagem natural via `recall`: sem candidato, pede
+ * mais detalhes; com um só, esquece; com mais de um, devolve os candidatos
+ * para o agente esclarecer com o usuário, sem apagar nada (009, edge case de
+ * pedido ambíguo).
+ */
+export function makeMemoryTools(memoryStore: MemoryStore, userId: string) {
+  const forgetPreference = tool(
+    async ({ description }) =>
+      asToolResult(async () => {
+        const candidates = await memoryStore.recall(userId, description, 3);
+
+        if (candidates.length === 0) {
+          throw new DomainError(
+            "nenhuma preferência memorizada parece corresponder a essa descrição",
+          );
+        }
+
+        if (candidates.length === 1) {
+          const [candidate] = candidates;
+          await memoryStore.forget(userId, candidate!.id);
+          return { forgotten: candidate!.fact };
+        }
+
+        return { candidates: candidates.map((candidate) => candidate.fact) };
+      }),
+    {
+      name: "forget_preference",
+      description:
+        "Esquece uma preferência memorizada do usuário, a partir de uma descrição em linguagem natural do que remover. Use quando o plantonista pedir para você esquecer algo que lembrava sobre ele. Se houver mais de uma preferência parecida, devolve as opções para você confirmar qual esquecer com o plantonista, sem apagar nada ainda.",
+      schema: forgetPreferenceSchema,
+    },
+  );
+
+  return [forgetPreference];
+}
+
+export type MemoryTools = ReturnType<typeof makeMemoryTools>;
 
 /**
  * Tool independente de store: consulta a statuspage pública de um provedor

@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { after, before, describe, it } from "node:test";
 
 import { MemoryOpsStore } from "../store/memory.js";
 import type { OpsStore } from "../store/port.js";
+import { SqliteMemoryStore } from "../store/sqlite/sqlite-memory-store.js";
 import { SqliteOpsStore } from "../store/sqlite/sqlite-ops-store.js";
-import { makeCheckProviderStatusTool, makeTools, TOOL_NAMES } from "./tools.js";
+import { makeCheckProviderStatusTool, makeMemoryTools, makeTools, TOOL_NAMES } from "./tools.js";
 
 type Result = { ok: true; data: unknown } | { ok: false; error: string };
 
@@ -201,5 +202,61 @@ describe("check_provider_status", () => {
     assert.match(description, /externo/);
     assert.match(description, /nosso.*provedor|provedor.*nosso/);
     assert.match(description, /fora do ar/);
+  });
+});
+
+describe("forget_preference (009)", () => {
+  let store: SqliteMemoryStore;
+
+  before(() => {
+    store = new SqliteMemoryStore(":memory:");
+  });
+  after(() => store.close());
+
+  it("sem nenhum candidato, devolve ok: false e não chama forget", async () => {
+    const [forgetPreference] = makeMemoryTools(store, "u1");
+    const result = await invoke(forgetPreference!, { description: "algo que nunca foi dito" });
+    assert.equal(result.ok, false);
+  });
+
+  it("com exatamente um candidato, esquece e confirma o fato removido", async () => {
+    await store.remember("u2", "prefiro respostas curtas");
+    const [forgetPreference] = makeMemoryTools(store, "u2");
+
+    const result = await invoke(forgetPreference!, { description: "prefiro respostas curtas" });
+    assert.equal(result.ok, true);
+    assert.equal(
+      (result as { ok: true; data: { forgotten: string } }).data.forgotten,
+      "prefiro respostas curtas",
+    );
+
+    const recalled = await store.recall("u2", "prefiro respostas curtas");
+    assert.equal(recalled.length, 0);
+  });
+
+  it("com múltiplos candidatos plausíveis, não apaga nada e devolve as opções", async () => {
+    await store.remember("u3", "gosto de futebol");
+    await store.remember("u3", "meu time é o Flamengo");
+    await store.remember("u3", "trabalho como engenheiro de dados");
+    const [forgetPreference] = makeMemoryTools(store, "u3");
+
+    const result = await invoke(forgetPreference!, { description: "qual seu time de futebol favorito?" });
+    assert.equal(result.ok, true);
+    const data = (result as { ok: true; data: { candidates: string[] } }).data;
+    assert.ok(data.candidates.length > 1);
+
+    const stillThere = await store.recall("u3", "qual seu time de futebol favorito?", 10);
+    assert.equal(stillThere.length, data.candidates.length);
+  });
+
+  it("nunca resolve preferência de outro usuário", async () => {
+    await store.remember("u4", "fato secreto do u4");
+    const [forgetPreference] = makeMemoryTools(store, "u5");
+
+    const result = await invoke(forgetPreference!, { description: "fato secreto do u4" });
+    assert.equal(result.ok, false);
+
+    const stillThere = await store.recall("u4", "fato secreto do u4");
+    assert.equal(stillThere.length, 1);
   });
 });

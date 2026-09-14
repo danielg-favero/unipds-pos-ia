@@ -1,3 +1,5 @@
+import type { MemoryStore } from "../memory/memory-store.js";
+import type { ConversationMessage } from "../store/conversation-port.js";
 import type { OpsStore } from "../store/port.js";
 
 export type TraceEvent =
@@ -22,12 +24,19 @@ export type TraceEvent =
 export type RunMetrics = {
   readonly llmCalls: number;
   readonly latencyMs: number;
+  readonly historyMessages: number;
 };
 
 export type StrategyInput = {
   readonly request: string;
   readonly maxIterations: number;
   readonly store: OpsStore;
+  readonly history?: readonly ConversationMessage[];
+  /** Fatos memorizados do usuário, relevantes para `request` (recall). */
+  readonly memories?: readonly string[];
+  /** Usuário da conversa; junto de `memoryStore`, habilita a tool `forget_preference` (009). */
+  readonly userId?: string;
+  readonly memoryStore?: MemoryStore;
 };
 
 export type StrategyRun = {

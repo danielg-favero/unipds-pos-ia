@@ -3,7 +3,13 @@
     "allow": [
       "Bash(npm run *)",
       "Bash(npm test *)",
-      "Read(//Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/04-agentes-antônomos/03-ops-pilot/src/http/**)"
+      "Read(//Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/04-agentes-antônomos/03-ops-pilot/src/http/**)",
+      "Bash(.specify/scripts/bash/setup-plan.sh --json)",
+      "Bash(.specify/scripts/bash/setup-tasks.sh --json)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks)",
+      "Bash(node --import tsx --test src/http/server.test.ts)",
+      "Bash(rm -rf /Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/04-agentes-antonomos)",
+      "Read(//Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/**)"
     ]
   }
 }

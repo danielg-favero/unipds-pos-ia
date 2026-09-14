@@ -29,7 +29,7 @@ describe("SqliteOpsStore — primeira execução", () => {
   it("cria o diretório do arquivo de banco se ele ainda não existir", async () => {
     const path = join(dir, "subdir-inexistente", "opspilot.db");
     const store = new SqliteOpsStore(path);
-    assert.equal((await store.listServices()).length, 5);
+    assert.equal((await store.listServices()).length, 6);
     store.close();
   });
 });

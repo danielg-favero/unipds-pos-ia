@@ -33,11 +33,17 @@ export class CallCounter extends BaseCallbackHandler {
 export class RunTracker {
   readonly counter = new CallCounter();
   readonly #startedAt = Date.now();
+  readonly #historyMessages: number;
+
+  constructor(historyMessages = 0) {
+    this.#historyMessages = historyMessages;
+  }
 
   snapshot(): RunMetrics {
     return {
       llmCalls: this.counter.calls,
       latencyMs: Date.now() - this.#startedAt,
+      historyMessages: this.#historyMessages,
     };
   }
 }
