@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type {
   ReasoningStrategy,
+  RunMetrics,
   StrategyInput,
   StrategyRun,
   TraceEvent,
@@ -105,14 +106,33 @@ export function runReflection(
     async run(input: StrategyInput): Promise<StrategyRun> {
       const startedAt = Date.now();
       let llmCalls = 0;
+      let promptTokensReal: number | undefined;
+      let sawPromptTokens = false;
       const trace: TraceEvent[] = [];
       let request = input.request;
       let lastRun: StrategyRun | undefined;
       const historyMessages = input.history?.length ?? 0;
 
+      // Soma promptTokensReal de cada tentativa, tratando `undefined` como
+      // ausente (não como 0) — o total final só é `undefined` se nenhuma
+      // tentativa reportou uso real (010, FR-002/FR-005).
+      const accumulate = (tokens: number | undefined): void => {
+        if (tokens === undefined) return;
+        promptTokensReal = (promptTokensReal ?? 0) + tokens;
+        sawPromptTokens = true;
+      };
+      const metricsFor = (contextBreakdown: RunMetrics["contextBreakdown"]): RunMetrics => ({
+        llmCalls,
+        latencyMs: Date.now() - startedAt,
+        historyMessages,
+        promptTokensReal: sawPromptTokens ? promptTokensReal : undefined,
+        contextBreakdown,
+      });
+
       for (let attempt = 0; attempt <= maxReflection; attempt += 1) {
         const runBase = await base.run({ ...input, request });
         llmCalls += runBase.metrics.llmCalls;
+        accumulate(runBase.metrics.promptTokensReal);
         trace.push(...withoutFinalAnswer(runBase.trace));
         lastRun = runBase;
 
@@ -129,7 +149,7 @@ export function runReflection(
             trace,
             runBase.answer,
             !verdict.approved,
-            { llmCalls, latencyMs: Date.now() - startedAt, historyMessages },
+            metricsFor(runBase.metrics.contextBreakdown),
           );
         }
 
@@ -139,12 +159,7 @@ export function runReflection(
       // Inatingível: o laço sempre retorna dentro de si (maxReflection >= 0).
       // Mantido para satisfazer o typechecker sem lançar em produção.
       const fallback = lastRun!;
-      return finishRun(
-        trace,
-        fallback.answer,
-        true,
-        { llmCalls, latencyMs: Date.now() - startedAt, historyMessages },
-      );
+      return finishRun(trace, fallback.answer, true, metricsFor(fallback.metrics.contextBreakdown));
     },
   };
 }

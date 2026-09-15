@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import type { AddressInfo } from "node:net";
-import { after, before, describe, it } from "node:test";
+import { after, afterEach, before, describe, it } from "node:test";
 
+import { buildProductionStrategy } from "../agents/production-graph.js";
 import { makeMemoryTools } from "../agents/tools.js";
-import type { StrategyInput, ReasoningStrategy, StrategyRun } from "../domain/strategy.js";
+import type { StrategyInput, ReasoningStrategy, StrategyRun, TraceEvent } from "../domain/strategy.js";
 import { MemoryConversationStore } from "../store/memory-conversation.js";
+import type { HistorySummarizerFn } from "../memory/history-summarizer.js";
+import { MemoryConversationSummaryStore } from "../store/memory-conversation-summary.js";
 import { MemoryOpsStore } from "../store/memory.js";
 import { SqliteMemoryStore } from "../store/sqlite/sqlite-memory-store.js";
 import type { ServerDeps } from "./server.js";
@@ -43,10 +46,12 @@ function slowStrategy(name: string, delayMs: number, run: StrategyRun): Reasonin
   };
 }
 
+const ZERO_BREAKDOWN = { history: 0, memories: 0, systemPrompt: 0, request: 0 };
+
 const FAKE_RUN: StrategyRun = {
   answer: "resposta fake",
   trace: [{ type: "answer", text: "resposta fake", partial: false }],
-  metrics: { llmCalls: 1, latencyMs: 5, historyMessages: 0 },
+  metrics: { llmCalls: 1, latencyMs: 5, historyMessages: 0, contextBreakdown: ZERO_BREAKDOWN },
 };
 
 const CRITIQUE_RUN: StrategyRun = {
@@ -55,7 +60,7 @@ const CRITIQUE_RUN: StrategyRun = {
     { type: "critique", text: "aprovado" },
     { type: "answer", text: "resposta revisada", partial: false },
   ],
-  metrics: { llmCalls: 2, latencyMs: 10, historyMessages: 0 },
+  metrics: { llmCalls: 2, latencyMs: 10, historyMessages: 0, contextBreakdown: ZERO_BREAKDOWN },
 };
 
 async function startServer(deps: ServerDeps): Promise<{ baseUrl: string; close: () => Promise<void> }> {
@@ -90,6 +95,7 @@ describe("POST /chat", () => {
         strategies: { react },
         store: new MemoryOpsStore(),
         conversationStore: new MemoryConversationStore(),
+        summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
       }));
     });
@@ -125,6 +131,7 @@ describe("POST /chat", () => {
         strategies: { react },
         store: new MemoryOpsStore(),
         conversationStore: new MemoryConversationStore(),
+        summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
       }));
     });
@@ -178,6 +185,7 @@ describe("POST /chat", () => {
         strategies: { react },
         store: new MemoryOpsStore(),
         conversationStore: new MemoryConversationStore(),
+        summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
       }));
     });
@@ -191,6 +199,64 @@ describe("POST /chat", () => {
       }
 
       assert.equal(react.lastInput?.history?.length, 12);
+    });
+  });
+
+  describe("User Story 1 (011) - resumo de histórico entra no contexto", () => {
+    let close: () => Promise<void>;
+    let baseUrl: string;
+    let react: ReturnType<typeof fakeStrategy>;
+    let summaryStore: MemoryConversationSummaryStore;
+    const fakeSummarizer: HistorySummarizerFn = async (input) =>
+      `${input.previousSummary} + lote`.trim();
+
+    before(async () => {
+      react = fakeStrategy("react", FAKE_RUN);
+      summaryStore = new MemoryConversationSummaryStore();
+      ({ baseUrl, close } = await startServer({
+        strategies: { react },
+        store: new MemoryOpsStore(),
+        conversationStore: new MemoryConversationStore(),
+        summaryStore,
+        memoryStore: newMemoryStore(),
+        historySummarizerFn: fakeSummarizer,
+      }));
+    });
+    after(() => close());
+
+    // Cada turno de /chat grava 2 mensagens (user + assistant) — ver src/http/server.ts.
+    // `turns` turnos produzem `2 * turns` mensagens na conversa.
+    const sendTurns = async (conversation: string | undefined, turns: number): Promise<string> => {
+      let current = conversation;
+      for (let i = 0; i < turns; i += 1) {
+        const res = await postChat(baseUrl, { message: `mensagem ${i}`, userId: "u1", conversation: current });
+        current = asRecord(await res.json()).conversation as string;
+      }
+      if (current === undefined) throw new Error("turns deve ser >= 1");
+      return current;
+    };
+
+    it("conversa com 8 ou menos mensagens não cria resumo (FR-009)", async () => {
+      const conversation = await sendTurns(undefined, 4); // 8 mensagens
+      assert.equal(await summaryStore.get(conversation), undefined);
+    });
+
+    it("após 16 mensagens, o resumo é persistido e entra no contexto da próxima mensagem", async () => {
+      const conversation = await sendTurns(undefined, 8); // 16 mensagens
+      const persisted = await summaryStore.get(conversation);
+      assert.ok(persisted);
+      assert.equal(persisted.summarizedThrough, 8);
+
+      await sendTurns(conversation, 1); // 18 mensagens: ainda não completa o próximo lote de 8
+      assert.equal(react.lastInput?.historySummary, persisted.summary);
+    });
+
+    it("antes de completar o próximo lote de 8, o resumo não muda de novo", async () => {
+      const conversation = await sendTurns(undefined, 8); // 16 mensagens
+      const afterFirstBatch = await summaryStore.get(conversation);
+
+      await sendTurns(conversation, 3); // 22 mensagens: ainda falta 1 lote completo (precisa de 24)
+      assert.deepEqual(await summaryStore.get(conversation), afterFirstBatch);
     });
   });
 
@@ -213,6 +279,7 @@ describe("POST /chat", () => {
         },
         store: new MemoryOpsStore(),
         conversationStore: new MemoryConversationStore(),
+        summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
       }));
     });
@@ -256,6 +323,7 @@ describe("POST /chat", () => {
         strategies: { react: fakeStrategy("react", FAKE_RUN) },
         store: new MemoryOpsStore(),
         conversationStore: new MemoryConversationStore(),
+        summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
       }));
     });
@@ -288,6 +356,7 @@ describe("POST /chat", () => {
         strategies: { react: slow },
         store: new MemoryOpsStore(),
         conversationStore: new MemoryConversationStore(),
+        summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
         timeoutMs: 20,
       });
@@ -313,6 +382,7 @@ describe("POST /chat", () => {
         strategies: { react },
         store: new MemoryOpsStore(),
         conversationStore: new MemoryConversationStore(),
+        summaryStore: new MemoryConversationSummaryStore(),
         memoryStore,
       }));
     });
@@ -355,6 +425,7 @@ describe("POST /chat", () => {
         strategies: { react: fakeStrategy("react", FAKE_RUN) },
         store: new MemoryOpsStore(),
         conversationStore: new MemoryConversationStore(),
+        summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
       }));
     });
@@ -385,7 +456,12 @@ describe("POST /chat", () => {
           return {
             answer: raw as string,
             trace: [{ type: "answer", text: raw as string, partial: false }],
-            metrics: { llmCalls: 0, latencyMs: 0, historyMessages: input.history?.length ?? 0 },
+            metrics: {
+              llmCalls: 0,
+              latencyMs: 0,
+              historyMessages: input.history?.length ?? 0,
+              contextBreakdown: ZERO_BREAKDOWN,
+            },
           };
         },
       };
@@ -397,6 +473,7 @@ describe("POST /chat", () => {
         strategies: { react: forgetPreferenceStrategy() },
         store: new MemoryOpsStore(),
         conversationStore: new MemoryConversationStore(),
+        summaryStore: new MemoryConversationSummaryStore(),
         memoryStore,
       }));
     });
@@ -414,5 +491,212 @@ describe("POST /chat", () => {
       const recalled = await memoryStore.recall("u1", "prefiro respostas curtas");
       assert.equal(recalled.length, 0);
     });
+  });
+
+  describe("User Story 1/2/3 (013) - grafo unificado com roteamento automático", () => {
+    let close: () => Promise<void>;
+    let baseUrl: string;
+    let react: ReturnType<typeof fakeStrategy>;
+    let planAndExecute: ReturnType<typeof fakeStrategy>;
+    let reflect: ReturnType<typeof fakeStrategy>;
+    let production: ReasoningStrategy;
+
+    before(async () => {
+      react = fakeStrategy("react", FAKE_RUN);
+      planAndExecute = fakeStrategy("plan-and-execute", FAKE_RUN);
+      reflect = fakeStrategy("reflect", FAKE_RUN);
+      production = buildProductionStrategy(
+        async () => ({ route: "plan-and-execute", reason: "tarefa de múltiplos passos" }),
+        { react, "plan-and-execute": planAndExecute, reflect },
+      );
+      ({ baseUrl, close } = await startServer({
+        strategies: { react, "plan-and-execute": planAndExecute, reflect, production },
+        store: new MemoryOpsStore(),
+        conversationStore: new MemoryConversationStore(),
+        summaryStore: new MemoryConversationSummaryStore(),
+        memoryStore: newMemoryStore(),
+      }));
+    });
+    after(() => close());
+
+    it("US1/US2: sem strategy, roteia automaticamente e o trace começa com o evento route", async () => {
+      const res = await postChat(baseUrl, { message: "investigue a causa raiz da degradação", userId: "u1" });
+      assert.equal(res.status, 200);
+      const body = asRecord(await res.json());
+      const trace = body.trace as TraceEvent[];
+      assert.equal(planAndExecute.calls, 1);
+      assert.deepEqual(trace[0], {
+        type: "route",
+        route: "plan-and-execute",
+        reason: "tarefa de múltiplos passos",
+        manual: false,
+      });
+    });
+
+    it("US3: com strategy explícita, executa exatamente essa rota e sinaliza manual:true no trace", async () => {
+      const reactCallsBefore = react.calls;
+      const planAndExecuteCallsBefore = planAndExecute.calls;
+      const res = await postChat(baseUrl, { message: "qual o status?", userId: "u1", strategy: "react" });
+      assert.equal(res.status, 200);
+      const body = asRecord(await res.json());
+      const trace = body.trace as TraceEvent[];
+      assert.equal(react.calls, reactCallsBefore + 1);
+      assert.equal(planAndExecute.calls, planAndExecuteCallsBefore);
+      assert.deepEqual(trace[0], {
+        type: "route",
+        route: "react",
+        reason: "override manual via /chat",
+        manual: true,
+      });
+    });
+
+    it("responde 422 quando a estratégia informada continua desconhecida (regressão)", async () => {
+      const res = await postChat(baseUrl, { message: "oi", userId: "u1", strategy: "nao-existe" });
+      assert.equal(res.status, 422);
+      const body = asRecord(await res.json());
+      assert.equal(body.requested, "nao-existe");
+    });
+  });
+});
+
+describe("POST /chat — métricas de contexto (010)", () => {
+  let close: () => Promise<void>;
+  let baseUrl: string;
+
+  afterEach(() => close());
+
+  it("responde 200 e omite promptTokensReal quando a estratégia não reporta uso real (US3)", async () => {
+    const react = fakeStrategy("react", {
+      answer: "resposta fake",
+      trace: [{ type: "answer", text: "resposta fake", partial: false }],
+      metrics: { llmCalls: 1, latencyMs: 5, historyMessages: 0, contextBreakdown: ZERO_BREAKDOWN },
+    });
+    ({ baseUrl, close } = await startServer({
+      strategies: { react },
+      store: new MemoryOpsStore(),
+      conversationStore: new MemoryConversationStore(),
+      summaryStore: new MemoryConversationSummaryStore(),
+      memoryStore: newMemoryStore(),
+    }));
+
+    const res = await postChat(baseUrl, { message: "oi", userId: "u1" });
+    assert.equal(res.status, 200);
+    const body = asRecord(await res.json());
+    const metrics = asRecord(body.metrics);
+    assert.equal("promptTokensReal" in metrics, false);
+    assert.deepEqual(metrics.contextBreakdown, ZERO_BREAKDOWN);
+  });
+
+  it("propaga contextBreakdown e promptTokensReal quando presentes na estratégia", async () => {
+    const breakdown = { history: 10, memories: 5, systemPrompt: 20, request: 3 };
+    const react = fakeStrategy("react", {
+      answer: "resposta fake",
+      trace: [{ type: "answer", text: "resposta fake", partial: false }],
+      metrics: {
+        llmCalls: 1,
+        latencyMs: 5,
+        historyMessages: 0,
+        promptTokensReal: 850,
+        contextBreakdown: breakdown,
+      },
+    });
+    ({ baseUrl, close } = await startServer({
+      strategies: { react },
+      store: new MemoryOpsStore(),
+      conversationStore: new MemoryConversationStore(),
+      summaryStore: new MemoryConversationSummaryStore(),
+      memoryStore: newMemoryStore(),
+    }));
+
+    const res = await postChat(baseUrl, { message: "oi", userId: "u1" });
+    assert.equal(res.status, 200);
+    const body = asRecord(await res.json());
+    const metrics = asRecord(body.metrics);
+    assert.equal(metrics.promptTokensReal, 850);
+    assert.deepEqual(metrics.contextBreakdown, breakdown);
+  });
+});
+
+describe("POST/GET/DELETE /memories", () => {
+  let close: () => Promise<void>;
+  let baseUrl: string;
+  let memoryStore: SqliteMemoryStore;
+
+  before(async () => {
+    memoryStore = newMemoryStore();
+    ({ baseUrl, close } = await startServer({
+      strategies: { react: fakeStrategy("react", FAKE_RUN) },
+      store: new MemoryOpsStore(),
+      conversationStore: new MemoryConversationStore(),
+      summaryStore: new MemoryConversationSummaryStore(),
+      memoryStore,
+    }));
+  });
+  after(() => close());
+
+  it("POST /memories memoriza um fato para o userId", async () => {
+    const res = await fetch(`${baseUrl}/memories`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: "u1", fact: "prefere alertas críticos primeiro" }),
+    });
+    assert.equal(res.status, 201);
+
+    const recalled = await memoryStore.recall("u1", "alertas críticos primeiro");
+    assert.ok(recalled.some((memory) => memory.fact === "prefere alertas críticos primeiro"));
+  });
+
+  it("POST /memories responde 400 com corpo inválido (sem fact)", async () => {
+    const res = await fetch(`${baseUrl}/memories`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: "u1" }),
+    });
+    assert.equal(res.status, 400);
+  });
+
+  it("GET /memories recupera os fatos mais relevantes do userId", async () => {
+    await memoryStore.remember("u2", "prefere respostas curtas");
+
+    const res = await fetch(
+      `${baseUrl}/memories?${new URLSearchParams({ userId: "u2", query: "respostas curtas" })}`,
+    );
+    assert.equal(res.status, 200);
+    const body = asRecord(await res.json());
+    const memories = body.memories as { fact: string }[];
+    assert.ok(memories.some((memory) => memory.fact === "prefere respostas curtas"));
+  });
+
+  it("GET /memories responde 400 sem userId", async () => {
+    const res = await fetch(`${baseUrl}/memories?${new URLSearchParams({ query: "algo" })}`);
+    assert.equal(res.status, 400);
+  });
+
+  it("DELETE /memories/:id esquece o fato; recall subsequente não o retorna mais", async () => {
+    await memoryStore.remember("u3", "fato a ser removido via HTTP");
+    const [memory] = await memoryStore.recall("u3", "fato a ser removido via HTTP");
+    assert.ok(memory);
+
+    const res = await fetch(
+      `${baseUrl}/memories/${memory.id}?${new URLSearchParams({ userId: "u3" })}`,
+      { method: "DELETE" },
+    );
+    assert.equal(res.status, 200);
+
+    const recalled = await memoryStore.recall("u3", "fato a ser removido via HTTP");
+    assert.equal(recalled.length, 0);
+  });
+
+  it("DELETE /memories/:id de um id inexistente não falha (idempotente)", async () => {
+    const res = await fetch(
+      `${baseUrl}/memories/id-inexistente?${new URLSearchParams({ userId: "u3" })}`,
+      { method: "DELETE" },
+    );
+    assert.equal(res.status, 200);
+  });
+
+  it("DELETE /memories/:id responde 400 sem userId", async () => {
+    const res = await fetch(`${baseUrl}/memories/qualquer-id`, { method: "DELETE" });
+    assert.equal(res.status, 400);
   });
 });

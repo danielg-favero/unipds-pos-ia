@@ -15,4 +15,12 @@ export interface ConversationStore {
   append(conversationId: string, message: ConversationMessage): Promise<void>;
   /** As `limit` mensagens mais recentes da conversa, em ordem cronológica. */
   lastMessages(conversationId: string, limit: number): Promise<readonly ConversationMessage[]>;
+  /** Total de mensagens já registradas na conversa (0 se ela não existe). */
+  countMessages(conversationId: string): Promise<number>;
+  /** Mensagens no intervalo `[start, end)` (índices 0-based, ordem cronológica). */
+  messagesRange(
+    conversationId: string,
+    start: number,
+    end: number,
+  ): Promise<readonly ConversationMessage[]>;
 }

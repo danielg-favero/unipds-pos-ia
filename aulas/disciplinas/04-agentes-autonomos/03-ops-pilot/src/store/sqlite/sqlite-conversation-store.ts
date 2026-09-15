@@ -23,6 +23,8 @@ export class SqliteConversationStore implements ConversationStore {
   readonly #stmts: {
     readonly insertMessage: StatementSync;
     readonly lastMessages: StatementSync;
+    readonly countMessages: StatementSync;
+    readonly messagesRange: StatementSync;
   };
 
   constructor(path: string = process.env.OPSPILOT_DB ?? "./data/opspilot.db") {
@@ -36,6 +38,12 @@ export class SqliteConversationStore implements ConversationStore {
       ),
       lastMessages: this.#db.prepare(
         "SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY id DESC LIMIT ?",
+      ),
+      countMessages: this.#db.prepare(
+        "SELECT COUNT(*) AS total FROM messages WHERE conversation_id = ?",
+      ),
+      messagesRange: this.#db.prepare(
+        "SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY id ASC LIMIT ? OFFSET ?",
       ),
     };
   }
@@ -54,6 +62,24 @@ export class SqliteConversationStore implements ConversationStore {
   ): Promise<readonly ConversationMessage[]> {
     const rows = this.#stmts.lastMessages.all(conversationId, limit) as MessageRow[];
     return rows.map(toMessage).reverse();
+  }
+
+  async countMessages(conversationId: string): Promise<number> {
+    const row = this.#stmts.countMessages.get(conversationId) as { total: number };
+    return row.total;
+  }
+
+  async messagesRange(
+    conversationId: string,
+    start: number,
+    end: number,
+  ): Promise<readonly ConversationMessage[]> {
+    const rows = this.#stmts.messagesRange.all(
+      conversationId,
+      end - start,
+      start,
+    ) as MessageRow[];
+    return rows.map(toMessage);
   }
 
   close(): void {

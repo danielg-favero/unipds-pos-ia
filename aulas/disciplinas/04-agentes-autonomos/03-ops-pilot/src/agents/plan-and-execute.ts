@@ -3,6 +3,8 @@ import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { z } from "zod";
 
+import { buildPromptSections } from "../context/context-builder.js";
+import { buildContextBreakdown } from "../context/tokens.js";
 import { errorMessage } from "../domain/errors.js";
 import type {
   ReasoningStrategy,
@@ -158,29 +160,61 @@ export function createPlanAndExecuteStrategy(
       const tracker = new RunTracker(history.length);
       const runConfig = { callbacks: [tracker.counter] };
       const model = createModel();
+      const systemPrompt = [PLANNER_PROMPT, EXECUTOR_PROMPT, REPLANNER_PROMPT].join(" ");
+
+      // `memories` já vem ordenada por relevância decrescente (memory-store.ts `recall`);
+      // um score sintético por posição preserva essa ordem para o corte por orçamento (FR-007).
+      const scoredMemories = memories.map((fact, i) => ({ fact, score: memories.length - i }));
+      const sections = buildPromptSections({
+        systemPrompt,
+        request: input.request,
+        historySummary: input.historySummary,
+        history,
+        memories: scoredMemories,
+      });
 
       // Sem array de mensagens no grafo (state.input é uma string única):
-      // memórias e histórico entram como transcript textual prefixado ao
+      // memórias, resumo e histórico entram como transcript textual prefixado ao
       // pedido, visto por planner/executor/replanner via state.input, sem
       // novos nós no grafo.
-      const memoryBlock =
-        memories.length === 0
+      const summaryBlock =
+        sections.historySummary === undefined || sections.historySummary.length === 0
           ? []
-          : ["Fatos memorizados sobre este usuário:", ...memories.map((fact) => `- ${fact}`), ""];
+          : [
+              "Resumo do início desta conversa (mensagens mais antigas, já fora do histórico recente):",
+              sections.historySummary,
+              "",
+            ];
+      const memoryBlock =
+        sections.memories.length === 0
+          ? []
+          : [
+              "Fatos memorizados sobre este usuário:",
+              ...sections.memories.map((m) => `- ${m.fact}`),
+              "",
+            ];
       const historyBlock =
-        history.length === 0
+        sections.history.length === 0
           ? []
           : [
               "Histórico da conversa:",
-              ...history.map(
+              ...sections.history.map(
                 (message) => `${message.role === "user" ? "Plantonista" : "OpsPilot"}: ${message.content}`,
               ),
               "",
             ];
       const request =
-        memoryBlock.length === 0 && historyBlock.length === 0
+        summaryBlock.length === 0 && memoryBlock.length === 0 && historyBlock.length === 0
           ? input.request
-          : [...memoryBlock, ...historyBlock, `Pedido atual: ${input.request}`].join("\n");
+          : [...summaryBlock, ...memoryBlock, ...historyBlock, `Pedido atual: ${input.request}`].join(
+              "\n",
+            );
+      const contextBreakdown = buildContextBreakdown({
+        history,
+        memories,
+        systemPrompt,
+        request: input.request,
+      });
 
       // Sem retry de propósito: as respostas vazias observadas eram 429 de quota,
       // e retentar um 429 só queima cota e mascara a causa em um TypeError do SDK.
@@ -341,13 +375,13 @@ export function createPlanAndExecuteStrategy(
 
         const concluded = skipReplanner ? !exhausted : final.answer !== "" && !exhausted;
 
-        return finishRun(final.events, answer, !concluded, tracker.snapshot());
+        return finishRun(final.events, answer, !concluded, tracker.snapshot(contextBreakdown));
       } catch (error) {
         return finishRun(
           final.events,
           `Execução interrompida: ${describeProviderError(error)}\nExecutado até aqui:\n${formatDone(final.done)}`,
           true,
-          tracker.snapshot(),
+          tracker.snapshot(contextBreakdown),
         );
       }
     },

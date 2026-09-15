@@ -84,6 +84,49 @@ describe("SqliteConversationStore (:memory:) — append/lastMessages", () => {
   });
 });
 
+describe("SqliteConversationStore — countMessages/messagesRange (011)", () => {
+  it("countMessages é 0 para conversa vazia ou inexistente", async () => {
+    const store = new SqliteConversationStore(":memory:");
+    const id = await store.create();
+    assert.equal(await store.countMessages(id), 0);
+    assert.equal(await store.countMessages("id-nunca-visto"), 0);
+    store.close();
+  });
+
+  it("countMessages reflete o total gravado", async () => {
+    const store = new SqliteConversationStore(":memory:");
+    const id = await store.create();
+    for (let i = 1; i <= 5; i += 1) {
+      await store.append(id, { role: "user", content: `mensagem ${i}` });
+    }
+    assert.equal(await store.countMessages(id), 5);
+    store.close();
+  });
+
+  it("messagesRange devolve um intervalo parcial em ordem cronológica", async () => {
+    const store = new SqliteConversationStore(":memory:");
+    const id = await store.create();
+    for (let i = 1; i <= 10; i += 1) {
+      await store.append(id, { role: "user", content: `mensagem ${i}` });
+    }
+    const range = await store.messagesRange(id, 2, 5);
+    assert.deepEqual(
+      range.map((m) => m.content),
+      ["mensagem 3", "mensagem 4", "mensagem 5"],
+    );
+    store.close();
+  });
+
+  it("messagesRange além do total devolve só o que existe, sem erro", async () => {
+    const store = new SqliteConversationStore(":memory:");
+    const id = await store.create();
+    await store.append(id, { role: "user", content: "mensagem 1" });
+    const range = await store.messagesRange(id, 0, 8);
+    assert.deepEqual(range.map((m) => m.content), ["mensagem 1"]);
+    store.close();
+  });
+});
+
 describe("SqliteConversationStore — persistência entre reinícios (US3)", () => {
   it("mensagens gravadas antes de reiniciar continuam visíveis numa nova instância sobre o mesmo arquivo", async () => {
     const path = freshFile();

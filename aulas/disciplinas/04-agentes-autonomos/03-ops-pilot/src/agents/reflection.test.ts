@@ -13,20 +13,40 @@ import {
 
 const answerEvent = (text: string): TraceEvent => ({ type: "answer", text, partial: false });
 
-/** Estratégia base falsa: devolve uma resposta fixa por chamada, na ordem dada. */
-function fakeStrategy(answers: readonly string[]): ReasoningStrategy & { calls: number } {
+const ZERO_BREAKDOWN = { history: 0, memories: 0, systemPrompt: 0, request: 0 };
+
+/**
+ * Estratégia base falsa: devolve uma resposta fixa por chamada, na ordem dada. `promptTokensPerCall`
+ * (opcional) simula o uso real reportado por cada tentativa (010); `contextBreakdown.request` reflete
+ * o índice da chamada (0, 1, 2...), para testar que o resultado final usa o da última tentativa.
+ */
+function fakeStrategy(
+  answers: readonly string[],
+  promptTokensPerCall: readonly (number | undefined)[] = [],
+): ReasoningStrategy & { calls: number } {
   const strategy = {
     name: "fake",
     calls: 0,
     async run(): Promise<StrategyRun> {
-      const answer = answers[Math.min(strategy.calls, answers.length - 1)] ?? "";
+      const callIndex = strategy.calls;
+      const answer = answers[Math.min(callIndex, answers.length - 1)] ?? "";
       strategy.calls += 1;
       const trace: TraceEvent[] = [
         { type: "action", tool: "list_alerts", args: { status: "firing" } },
         { type: "observation", ok: true, result: { alerts: [] } },
         answerEvent(answer),
       ];
-      return { answer, trace, metrics: { llmCalls: 1, latencyMs: 1, historyMessages: 0 } };
+      return {
+        answer,
+        trace,
+        metrics: {
+          llmCalls: 1,
+          latencyMs: 1,
+          historyMessages: 0,
+          promptTokensReal: promptTokensPerCall[callIndex],
+          contextBreakdown: { ...ZERO_BREAKDOWN, request: callIndex },
+        },
+      };
     },
   };
   return strategy;
@@ -256,5 +276,61 @@ describe("runReflection — a mesma resiliência se reflete na execução comple
     assert.equal(result.trace.at(-1)?.type, "answer");
     assert.equal((result.trace.at(-1) as { partial: boolean }).partial, true);
     assert.ok(result.metrics.llmCalls > 0);
+  });
+});
+
+describe("runReflection — promptTokensReal e contextBreakdown (010)", () => {
+  it("soma promptTokensReal de todas as tentativas quando todas reportam uso", async () => {
+    const base = fakeStrategy(["primeira", "segunda"], [50, 30]);
+    const strategy = runReflection(base, scriptedCritic([reject(), approve()]), {
+      maxReflection: 1,
+    });
+
+    const result = await strategy.run({ request: "x", maxIterations: 8, store: {} as never });
+
+    assert.equal(result.metrics.promptTokensReal, 80);
+  });
+
+  it("devolve promptTokensReal undefined quando nenhuma tentativa reporta uso real", async () => {
+    const base = fakeStrategy(["primeira", "segunda"], [undefined, undefined]);
+    const strategy = runReflection(base, scriptedCritic([reject(), approve()]), {
+      maxReflection: 1,
+    });
+
+    const result = await strategy.run({ request: "x", maxIterations: 8, store: {} as never });
+
+    assert.equal(result.metrics.promptTokensReal, undefined);
+  });
+
+  it("soma apenas as tentativas que reportaram uso, ignorando as que não reportaram", async () => {
+    const base = fakeStrategy(["primeira", "segunda"], [undefined, 30]);
+    const strategy = runReflection(base, scriptedCritic([reject(), approve()]), {
+      maxReflection: 1,
+    });
+
+    const result = await strategy.run({ request: "x", maxIterations: 8, store: {} as never });
+
+    assert.equal(result.metrics.promptTokensReal, 30);
+  });
+
+  it("contextBreakdown final é o da última tentativa executada, mesmo após reprovações", async () => {
+    const base = fakeStrategy(["primeira", "segunda", "terceira"]);
+    const strategy = runReflection(base, scriptedCritic([reject(), reject(), approve()]), {
+      maxReflection: 2,
+    });
+
+    const result = await strategy.run({ request: "x", maxIterations: 8, store: {} as never });
+
+    // fakeStrategy marca contextBreakdown.request com o índice da chamada (0, 1, 2...).
+    assert.equal(result.metrics.contextBreakdown.request, 2);
+  });
+
+  it("contextBreakdown está sempre presente, mesmo no caminho de esgotamento (maxReflection)", async () => {
+    const base = fakeStrategy(["única"]);
+    const strategy = runReflection(base, scriptedCritic([reject()]), { maxReflection: 0 });
+
+    const result = await strategy.run({ request: "x", maxIterations: 8, store: {} as never });
+
+    assert.deepEqual(result.metrics.contextBreakdown, ZERO_BREAKDOWN);
   });
 });

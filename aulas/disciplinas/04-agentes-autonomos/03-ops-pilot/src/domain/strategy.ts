@@ -1,3 +1,4 @@
+import type { ContextBreakdown } from "../context/tokens.js";
 import type { MemoryStore } from "../memory/memory-store.js";
 import type { ConversationMessage } from "../store/conversation-port.js";
 import type { OpsStore } from "../store/port.js";
@@ -19,12 +20,27 @@ export type TraceEvent =
       readonly error?: string;
     }
   | { readonly type: "critique"; readonly text: string }
-  | { readonly type: "answer"; readonly text: string; readonly partial: boolean };
+  | { readonly type: "answer"; readonly text: string; readonly partial: boolean }
+  /** Decisão do roteador do grafo unificado (013): `manual` distingue override explícito de decisão automática/fallback. */
+  | { readonly type: "route"; readonly route: string; readonly reason: string; readonly manual: boolean }
+  /** Troca do modelo primário para o de reserva dentro de uma interação (014, FR-004). Emitido no máximo uma vez por execução. */
+  | {
+      readonly type: "fallback";
+      readonly primaryModel: string;
+      readonly fallbackModel: string;
+      readonly reason: string;
+    };
 
 export type RunMetrics = {
   readonly llmCalls: number;
   readonly latencyMs: number;
   readonly historyMessages: number;
+  /** Soma do uso real de tokens de prompt de todas as chamadas da interação; ausente se o provedor nunca reportou (FR-005, 010). */
+  readonly promptTokensReal?: number;
+  /** Estimativa por fonte (chars/4); sempre presente, mesmo com fontes vazias (FR-004, 010). */
+  readonly contextBreakdown: ContextBreakdown;
+  /** Modelo que efetivamente produziu a resposta final: primário, ou a reserva se houve fallback (014, FR-005). */
+  readonly modelUsed?: string;
 };
 
 export type StrategyInput = {
@@ -34,9 +50,13 @@ export type StrategyInput = {
   readonly history?: readonly ConversationMessage[];
   /** Fatos memorizados do usuário, relevantes para `request` (recall). */
   readonly memories?: readonly string[];
+  /** Resumo acumulado das mensagens que já saíram da janela de `history` (011). */
+  readonly historySummary?: string;
   /** Usuário da conversa; junto de `memoryStore`, habilita a tool `forget_preference` (009). */
   readonly userId?: string;
   readonly memoryStore?: MemoryStore;
+  /** Nome de rota forçado manualmente, contornando a decisão automática do roteador (013). */
+  readonly overrideRoute?: string;
 };
 
 export type StrategyRun = {

@@ -29,4 +29,17 @@ export class MemoryConversationStore implements ConversationStore {
     const messages = this.#messages.get(conversationId) ?? [];
     return messages.slice(-limit);
   }
+
+  async countMessages(conversationId: string): Promise<number> {
+    return this.#messages.get(conversationId)?.length ?? 0;
+  }
+
+  async messagesRange(
+    conversationId: string,
+    start: number,
+    end: number,
+  ): Promise<readonly ConversationMessage[]> {
+    const messages = this.#messages.get(conversationId) ?? [];
+    return messages.slice(start, end);
+  }
 }

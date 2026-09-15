@@ -30,6 +30,10 @@ const formatEvent = (event: TraceEvent): string => {
       return `[critique] ${event.text}`;
     case "answer":
       return `[answer] ${event.text}${event.partial ? " (parcial)" : ""}`;
+    case "route":
+      return `[route] ${event.route}${event.manual ? " (manual)" : ""}: ${event.reason}`;
+    case "fallback":
+      return `[fallback] ${event.primaryModel} → ${event.fallbackModel}: ${event.reason}`;
   }
 };
 

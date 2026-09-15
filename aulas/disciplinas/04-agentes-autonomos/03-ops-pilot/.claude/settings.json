@@ -9,7 +9,12 @@
       "Bash(.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks)",
       "Bash(node --import tsx --test src/http/server.test.ts)",
       "Bash(rm -rf /Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/04-agentes-antonomos)",
-      "Read(//Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/**)"
+      "Read(//Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/**)",
+      "Bash(npx tsx *)",
+      "Bash(mkdir -p specs/013-grafo-unificado-roteador/checklists && find . -path ./node_modules -prune -o -iname \"spec-template*\" -print 2>/dev/null)"
+    ],
+    "additionalDirectories": [
+      "/Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/04-agentes-autonomos/03-ops-pilot/specs/013-grafo-unificado-roteador"
     ]
   }
 }

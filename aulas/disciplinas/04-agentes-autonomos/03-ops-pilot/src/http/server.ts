@@ -3,13 +3,23 @@ import { pathToFileURL } from "node:url";
 import express, { type Express } from "express";
 
 import { strategies as productionStrategies } from "../agents/registry.js";
+import { isRouteName } from "../agents/production-graph.js";
+import { withReflection } from "../agents/reflection.js";
 import { UnknownStrategyError, errorMessage } from "../domain/errors.js";
 import type { ReasoningStrategy } from "../domain/strategy.js";
+import type { HistorySummarizerFn } from "../memory/history-summarizer.js";
+import { updateHistorySummary } from "../memory/history-summarizer.js";
 import { reflectLearning } from "../memory/learning-reflector.js";
 import type { MemoryStore } from "../memory/memory-store.js";
+import type { ConversationSummaryStore } from "../store/conversation-summary-port.js";
 import type { ConversationStore } from "../store/conversation-port.js";
 import type { OpsStore } from "../store/port.js";
-import { chatRequestSchema } from "./schemas.js";
+import {
+  chatRequestSchema,
+  forgetQuerySchema,
+  recallQuerySchema,
+  rememberRequestSchema,
+} from "./schemas.js";
 
 /** Mesmo default do CLI (`src/cli/args.ts`) para manter as estratégias comparáveis. */
 const DEFAULT_MAX_ITERATIONS = 8;
@@ -24,8 +34,11 @@ export type ServerDeps = {
   readonly strategies: Readonly<Record<string, ReasoningStrategy>>;
   readonly store: OpsStore;
   readonly conversationStore: ConversationStore;
+  readonly summaryStore: ConversationSummaryStore;
   readonly memoryStore: MemoryStore;
   readonly timeoutMs?: number;
+  /** Sobrescrevível nos testes por um resumidor fake determinístico (011). */
+  readonly historySummarizerFn?: HistorySummarizerFn;
 };
 
 const TIMEOUT = Symbol("timeout");
@@ -41,15 +54,49 @@ export function createServer(deps: ServerDeps): Express {
       return;
     }
 
-    const { message, userId, reflect, conversation, strategy: strategyName = "react" } = parsed.data;
-    const resolvedName = reflect ? `reflect:${strategyName}` : strategyName;
-    const strategy = deps.strategies[resolvedName];
+    const { message, userId, reflect, conversation, strategy: strategyName } = parsed.data;
+
+    // `production` (013) roteia automaticamente entre as estratégias-base; é o
+    // default quando `strategy` não vem no corpo. Quando o catálogo injetado
+    // não a registra (ex.: testes com estratégias fake isoladas), o default
+    // legado ("react") é preservado — comportamento anterior a 013 intacto.
+    const production = deps.strategies.production;
+
+    let strategy: ReasoningStrategy | undefined;
+    let overrideRoute: string | undefined;
+
+    if (strategyName === undefined) {
+      strategy = production ?? deps.strategies.react;
+      if (strategy !== undefined) strategy = reflect ? withReflection(strategy) : strategy;
+    } else {
+      const resolvedName = reflect ? `reflect:${strategyName}` : strategyName;
+      const explicit = deps.strategies[resolvedName];
+      if (explicit === undefined) {
+        const available = Object.keys(deps.strategies).toSorted();
+        const error = new UnknownStrategyError(resolvedName, available);
+        res.status(422).json({ error: error.message, requested: resolvedName, available });
+        return;
+      }
+      // Override manual (013): só passa pelo grafo unificado quando `strategy`
+      // nomeia uma das rotas que ele entende — caso contrário, mantém o
+      // despacho direto de sempre (compatível com nomes de catálogo livres).
+      if (production !== undefined && isRouteName(strategyName)) {
+        overrideRoute = strategyName;
+        strategy = reflect ? withReflection(production) : production;
+      } else {
+        strategy = explicit;
+      }
+    }
+
     if (strategy === undefined) {
+      const requested = "react";
       const available = Object.keys(deps.strategies).toSorted();
-      const error = new UnknownStrategyError(resolvedName, available);
-      res.status(422).json({ error: error.message, requested: resolvedName, available });
+      const error = new UnknownStrategyError(requested, available);
+      res.status(422).json({ error: error.message, requested, available });
       return;
     }
+
+    const resolvedStrategy = strategy;
 
     const timeoutMs = deps.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const timeout = new Promise<typeof TIMEOUT>((resolve) => {
@@ -63,16 +110,19 @@ export function createServer(deps: ServerDeps): Express {
       const history = await deps.conversationStore.lastMessages(conversationId, HISTORY_WINDOW);
       const recalled = await deps.memoryStore.recall(userId, message);
       const memories = recalled.map((memory) => memory.fact);
+      const existingSummary = await deps.summaryStore.get(conversationId);
 
       const result = await Promise.race([
-        strategy.run({
+        resolvedStrategy.run({
           request: message,
           maxIterations: DEFAULT_MAX_ITERATIONS,
           store: deps.store,
           history,
           memories,
+          historySummary: existingSummary?.summary,
           userId,
           memoryStore: deps.memoryStore,
+          overrideRoute,
         }),
         timeout,
       ]);
@@ -98,9 +148,59 @@ export function createServer(deps: ServerDeps): Express {
         userId,
         memoryStore: deps.memoryStore,
       });
+      void updateHistorySummary(
+        {
+          conversationId,
+          conversationStore: deps.conversationStore,
+          summaryStore: deps.summaryStore,
+        },
+        deps.historySummarizerFn,
+      );
     })().catch((error: unknown) => {
       res.status(500).json({ error: errorMessage(error) });
     });
+  });
+
+  app.post("/memories", (req, res) => {
+    const parsed = rememberRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "corpo inválido", issues: parsed.error.issues });
+      return;
+    }
+
+    const { userId, fact } = parsed.data;
+    deps.memoryStore
+      .remember(userId, fact)
+      .then(() => res.status(201).json({ ok: true }))
+      .catch((error: unknown) => res.status(500).json({ error: errorMessage(error) }));
+  });
+
+  app.get("/memories", (req, res) => {
+    const parsed = recallQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: "query inválida", issues: parsed.error.issues });
+      return;
+    }
+
+    const { userId, query, limit } = parsed.data;
+    deps.memoryStore
+      .recall(userId, query, limit)
+      .then((memories) => res.status(200).json({ memories }))
+      .catch((error: unknown) => res.status(500).json({ error: errorMessage(error) }));
+  });
+
+  app.delete("/memories/:id", (req, res) => {
+    const parsed = forgetQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: "query inválida", issues: parsed.error.issues });
+      return;
+    }
+
+    const { userId } = parsed.data;
+    deps.memoryStore
+      .forget(userId, req.params.id)
+      .then(() => res.status(200).json({ ok: true }))
+      .catch((error: unknown) => res.status(500).json({ error: errorMessage(error) }));
   });
 
   return app;
@@ -112,10 +212,20 @@ async function main(): Promise<void> {
     "../store/sqlite/sqlite-conversation-store.js"
   );
   const { SqliteMemoryStore } = await import("../store/sqlite/sqlite-memory-store.js");
+  const { SqliteConversationSummaryStore } = await import(
+    "../store/sqlite/sqlite-conversation-summary-store.js"
+  );
   const store = new SqliteOpsStore();
   const conversationStore = new SqliteConversationStore();
+  const summaryStore = new SqliteConversationSummaryStore();
   const memoryStore = new SqliteMemoryStore();
-  const app = createServer({ strategies: productionStrategies, store, conversationStore, memoryStore });
+  const app = createServer({
+    strategies: productionStrategies,
+    store,
+    conversationStore,
+    summaryStore,
+    memoryStore,
+  });
   const port = Number(process.env.PORT ?? 3000);
   app.listen(port, () => {
     console.log(`OpsPilot HTTP server ouvindo em :${port}`);

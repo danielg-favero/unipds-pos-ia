@@ -18,11 +18,13 @@ const incident = (over: Partial<Incident>): Incident => ({
   ...over,
 });
 
+const ZERO_BREAKDOWN = { history: 0, memories: 0, systemPrompt: 0, request: 0 };
+
 /** `StrategyRun` fabricado — concluído por padrão, sem tocar rede. */
 const run = (answer: string, opts: { partial?: boolean } = {}): StrategyRun => ({
   answer,
   trace: [{ type: "answer", text: answer, partial: opts.partial ?? false }],
-  metrics: { llmCalls: 1, latencyMs: 1, historyMessages: 0 },
+  metrics: { llmCalls: 1, latencyMs: 1, historyMessages: 0, contextBreakdown: ZERO_BREAKDOWN },
 });
 
 const partialRun = run("interrompido: 429", { partial: true });
@@ -48,7 +50,14 @@ describe("concluded", () => {
   });
 
   it("falso quando não há trace algum", () => {
-    assert.equal(concluded({ answer: "", trace: [], metrics: { llmCalls: 0, latencyMs: 0, historyMessages: 0 } }), false);
+    assert.equal(
+      concluded({
+        answer: "",
+        trace: [],
+        metrics: { llmCalls: 0, latencyMs: 0, historyMessages: 0, contextBreakdown: ZERO_BREAKDOWN },
+      }),
+      false,
+    );
   });
 });
 
