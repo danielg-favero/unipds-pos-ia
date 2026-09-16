@@ -56,6 +56,24 @@ export const requestIdParamSchema = z
 
 export type RequestIdParam = z.infer<typeof requestIdParamSchema>;
 
+/** Path param `:requestId` de `POST /chat/:requestId/decision` (016). */
+export const decisionParamSchema = z
+  .object({
+    requestId: z.string().min(1),
+  })
+  .strict();
+
+export type DecisionParam = z.infer<typeof decisionParamSchema>;
+
+/** Corpo de `POST /chat/:requestId/decision` (016). */
+export const decisionRequestSchema = z
+  .object({
+    decision: z.enum(["approve", "deny"]),
+  })
+  .strict();
+
+export type DecisionRequest = z.infer<typeof decisionRequestSchema>;
+
 /** Query string de `GET /stats`. `since` no formato `<inteiro><s|m|h|d>` (ex.: "24h"); default "24h". */
 export const statsQuerySchema = z
   .object({

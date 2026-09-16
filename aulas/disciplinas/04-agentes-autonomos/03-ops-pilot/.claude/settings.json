@@ -12,7 +12,10 @@
       "Read(//Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/**)",
       "Bash(npx tsx *)",
       "Bash(mkdir -p specs/013-grafo-unificado-roteador/checklists && find . -path ./node_modules -prune -o -iname \"spec-template*\" -print 2>/dev/null)",
-      "Bash(mkdir -p specs/015-trace-persistido-logs/checklists && date +%Y-%m-%d)"
+      "Bash(mkdir -p specs/015-trace-persistido-logs/checklists && date +%Y-%m-%d)",
+      "Bash(node --import tsx --test src/mcp/server.stdout.test.ts)",
+      "Bash(git stash *)",
+      "Bash(node --import tsx --test src/http/approval.test.ts src/http/server.test.ts)"
     ],
     "additionalDirectories": [
       "/Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/04-agentes-autonomos/03-ops-pilot/specs/013-grafo-unificado-roteador",

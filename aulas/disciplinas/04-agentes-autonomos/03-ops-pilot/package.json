@@ -23,12 +23,14 @@
     "@langchain/langgraph": "^1.4.13",
     "@langchain/openai": "^1.5.10",
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "cors": "^2.8.6",
     "express": "^5.2.1",
     "mysql2": "^3.24.2",
     "sequelize": "^6.37.8",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.4.0",
     "tsx": "^4.23.12",

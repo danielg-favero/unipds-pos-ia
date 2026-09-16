@@ -1,28 +1,34 @@
 import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 
+import cors from "cors";
 import express, { type Express } from "express";
 
+import { withApprovalGuardrail } from "../agents/approval-guardrail.js";
 import { strategies as productionStrategies } from "../agents/registry.js";
 import { isRouteName } from "../agents/production-graph.js";
 import { withReflection } from "../agents/reflection.js";
+import { ApprovalNotFoundError, ApprovalNotPendingError } from "../domain/approval.js";
 import { parseDurationMs } from "../domain/duration.js";
-import { RequestNotFoundError, UnknownStrategyError, errorMessage } from "../domain/errors.js";
+import { RequestNotFoundError, UnknownStrategyError, errorMessage, isDomainError } from "../domain/errors.js";
 import { estimateCostUsd } from "../domain/pricing.js";
 import { groupBy, summarize } from "../domain/stats.js";
-import type { ReasoningStrategy } from "../domain/strategy.js";
+import type { ReasoningStrategy, RunMetrics, TraceEvent } from "../domain/strategy.js";
 import { routeOf } from "../domain/trace.js";
 import type { HistorySummarizerFn } from "../memory/history-summarizer.js";
 import { updateHistorySummary } from "../memory/history-summarizer.js";
 import { reflectLearning } from "../memory/learning-reflector.js";
 import type { MemoryStore } from "../memory/memory-store.js";
 import { logEvent } from "../obs/logger.js";
+import type { ApprovalStore } from "../store/approval-port.js";
 import type { ConversationSummaryStore } from "../store/conversation-summary-port.js";
 import type { ConversationStore } from "../store/conversation-port.js";
 import type { OpsStore } from "../store/port.js";
 import type { RequestTraceStore } from "../store/request-trace-port.js";
 import {
   chatRequestSchema,
+  decisionParamSchema,
+  decisionRequestSchema,
   forgetQuerySchema,
   recallQuerySchema,
   rememberRequestSchema,
@@ -47,18 +53,36 @@ export type ServerDeps = {
   readonly memoryStore: MemoryStore;
   /** Persistência de trace/métricas por requisição (015). */
   readonly requestTraceStore: RequestTraceStore;
+  /** Persistência de ações sensíveis pendentes de aprovação humana (016). */
+  readonly approvalStore: ApprovalStore;
   readonly timeoutMs?: number;
   /** Sobrescrevível nos testes por um resumidor fake determinístico (011). */
   readonly historySummarizerFn?: HistorySummarizerFn;
+  /** Origem única liberada para CORS (016); sem CORS quando ausente (ex.: testes). */
+  readonly webOrigin?: string;
 };
 
 const TIMEOUT = Symbol("timeout");
 
+/** Resposta mínima de `StrategyRun` para uma decisão de aprovação (016) — sem passar pelo grafo/modelo de novo. */
+const ZERO_CONTEXT_BREAKDOWN = { history: 0, memories: 0, systemPrompt: 0, request: 0 };
+const decisionMetrics = (): RunMetrics => ({
+  llmCalls: 0,
+  latencyMs: 0,
+  historyMessages: 0,
+  contextBreakdown: ZERO_CONTEXT_BREAKDOWN,
+});
+
 export function createServer(deps: ServerDeps): Express {
   const app = express();
+  if (deps.webOrigin !== undefined) {
+    app.use(cors({ origin: deps.webOrigin, methods: ["GET", "POST", "OPTIONS", "DELETE"] }));
+  }
   app.use(express.json());
 
-  app.post("/chat", (req, res) => {
+  const router = express.Router();
+
+  router.post("/chat", (req, res) => {
     // Gerado uma vez por requisição (015): correlaciona corpo, header e trace persistido.
     const requestId = randomUUID();
     res.setHeader("X-Request-Id", requestId);
@@ -135,11 +159,21 @@ export function createServer(deps: ServerDeps): Express {
       const memories = recalled.map((memory) => memory.fact);
       const existingSummary = await deps.summaryStore.get(conversationId);
 
+      // Guardrail (016): a store injetada nunca executa open_incident/resolve_incident
+      // de fato — qualquer tentativa vira uma PendingApproval e o modelo recebe uma
+      // observação de erro no lugar do resultado (research.md §2).
+      const guardedStore = withApprovalGuardrail(
+        deps.store,
+        requestId,
+        conversationId,
+        deps.approvalStore,
+      );
+
       const result = await Promise.race([
         resolvedStrategy.run({
           request: message,
           maxIterations: DEFAULT_MAX_ITERATIONS,
-          store: deps.store,
+          store: guardedStore,
           history,
           memories,
           historySummary: existingSummary?.summary,
@@ -154,6 +188,17 @@ export function createServer(deps: ServerDeps): Express {
         respond(504, { error: "tempo limite excedido (180s)" });
         void deps.requestTraceStore
           .finishRequest(requestId, { status: "timeout" })
+          .catch(() => {});
+        return;
+      }
+
+      // Execução parou num guardrail (016): responde 202 com a ação pendente,
+      // sem persistir a troca como conversa concluída (contracts/http-api.md).
+      const pendingApproval = await deps.approvalStore.get(requestId);
+      if (pendingApproval !== undefined && pendingApproval.status === "pending") {
+        respond(202, { conversation: conversationId, pendingApproval });
+        void deps.requestTraceStore
+          .finishRequest(requestId, { status: "ok", metrics: result.metrics })
           .catch(() => {});
         return;
       }
@@ -209,7 +254,99 @@ export function createServer(deps: ServerDeps): Express {
     });
   });
 
-  app.get("/stats", (req, res) => {
+  router.post("/chat/:requestId/decision", (req, res) => {
+    const parsedParam = decisionParamSchema.safeParse(req.params);
+    if (!parsedParam.success) {
+      res.status(400).json({ error: "path inválido", issues: parsedParam.error.issues });
+      return;
+    }
+    const parsedBody = decisionRequestSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      res.status(400).json({ error: "corpo inválido", issues: parsedBody.error.issues });
+      return;
+    }
+
+    const { requestId } = parsedParam.data;
+    const { decision } = parsedBody.data;
+
+    (async () => {
+      const approval = await deps.approvalStore.get(requestId);
+      if (approval === undefined) {
+        const error = new ApprovalNotFoundError(requestId);
+        res.status(404).json({ error: error.message, requestId });
+        return;
+      }
+      if (approval.status !== "pending") {
+        res.status(409).json({
+          error: new ApprovalNotPendingError(approval).message,
+          pendingApproval: approval,
+        });
+        return;
+      }
+
+      const conversationId = await deps.approvalStore.getConversationId(requestId);
+
+      if (decision === "deny") {
+        await deps.approvalStore.decide(requestId, "denied");
+        const answer = `Ação negada pelo operador: ${approval.description}`;
+        const trace: TraceEvent[] = [
+          { type: "observation", ok: false, error: "ação negada pelo operador" },
+          { type: "answer", text: answer, partial: false },
+        ];
+        if (conversationId !== undefined) {
+          await deps.conversationStore.append(conversationId, { role: "assistant", content: answer });
+        }
+        res.status(200).json({
+          answer,
+          trace,
+          metrics: decisionMetrics(),
+          conversation: conversationId,
+          requestId,
+        });
+        return;
+      }
+
+      // decision === "approve": executa a ação real diretamente no store, sem
+      // reentrar no grafo (a decisão do operador substitui a do modelo).
+      try {
+        const result =
+          approval.tool === "open_incident"
+            ? await deps.store.openIncident({
+                title: String(approval.args.title ?? ""),
+                serviceId: String(approval.args.service ?? ""),
+                severity: approval.args.severity as never,
+              })
+            : await deps.store.resolveIncident(String(approval.args.id ?? ""));
+
+        await deps.approvalStore.decide(requestId, "approved", result);
+        const answer = `Ação aprovada e executada: ${approval.description}`;
+        const trace: TraceEvent[] = [
+          { type: "observation", ok: true, result },
+          { type: "answer", text: answer, partial: false },
+        ];
+        if (conversationId !== undefined) {
+          await deps.conversationStore.append(conversationId, { role: "assistant", content: answer });
+        }
+        res.status(200).json({
+          answer,
+          trace,
+          metrics: decisionMetrics(),
+          conversation: conversationId,
+          requestId,
+        });
+      } catch (error) {
+        if (isDomainError(error)) {
+          res.status(422).json({ error: error.message });
+          return;
+        }
+        throw error;
+      }
+    })().catch((error: unknown) => {
+      res.status(500).json({ error: errorMessage(error) });
+    });
+  });
+
+  router.get("/stats", (req, res) => {
     const parsed = statsQuerySchema.safeParse(req.query);
     if (!parsed.success) {
       res.status(400).json({ error: "query inválida", issues: parsed.error.issues });
@@ -236,7 +373,7 @@ export function createServer(deps: ServerDeps): Express {
       .catch((error: unknown) => res.status(500).json({ error: errorMessage(error) }));
   });
 
-  app.get("/requests/:id", (req, res) => {
+  router.get("/requests/:id", (req, res) => {
     const parsed = requestIdParamSchema.safeParse(req.params);
     if (!parsed.success) {
       res.status(400).json({ error: "query inválida", issues: parsed.error.issues });
@@ -256,7 +393,7 @@ export function createServer(deps: ServerDeps): Express {
       .catch((error: unknown) => res.status(500).json({ error: errorMessage(error) }));
   });
 
-  app.post("/memories", (req, res) => {
+  router.post("/memories", (req, res) => {
     const parsed = rememberRequestSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "corpo inválido", issues: parsed.error.issues });
@@ -270,7 +407,7 @@ export function createServer(deps: ServerDeps): Express {
       .catch((error: unknown) => res.status(500).json({ error: errorMessage(error) }));
   });
 
-  app.get("/memories", (req, res) => {
+  router.get("/memories", (req, res) => {
     const parsed = recallQuerySchema.safeParse(req.query);
     if (!parsed.success) {
       res.status(400).json({ error: "query inválida", issues: parsed.error.issues });
@@ -284,7 +421,7 @@ export function createServer(deps: ServerDeps): Express {
       .catch((error: unknown) => res.status(500).json({ error: errorMessage(error) }));
   });
 
-  app.delete("/memories/:id", (req, res) => {
+  router.delete("/memories/:id", (req, res) => {
     const parsed = forgetQuerySchema.safeParse(req.query);
     if (!parsed.success) {
       res.status(400).json({ error: "query inválida", issues: parsed.error.issues });
@@ -297,6 +434,9 @@ export function createServer(deps: ServerDeps): Express {
       .then(() => res.status(200).json({ ok: true }))
       .catch((error: unknown) => res.status(500).json({ error: errorMessage(error) }));
   });
+
+  // Base path (016, research.md §4): convive com outras aplicações no mesmo domínio.
+  app.use("/opspilot", router);
 
   return app;
 }
@@ -313,11 +453,13 @@ async function main(): Promise<void> {
   const { SqliteRequestTraceStore } = await import(
     "../store/sqlite/sqlite-request-trace-store.js"
   );
+  const { SqliteApprovalStore } = await import("../store/sqlite/sqlite-approval-store.js");
   const store = new SqliteOpsStore();
   const conversationStore = new SqliteConversationStore();
   const summaryStore = new SqliteConversationSummaryStore();
   const memoryStore = new SqliteMemoryStore();
   const requestTraceStore = new SqliteRequestTraceStore();
+  const approvalStore = new SqliteApprovalStore();
   const app = createServer({
     strategies: productionStrategies,
     store,
@@ -325,6 +467,8 @@ async function main(): Promise<void> {
     summaryStore,
     memoryStore,
     requestTraceStore,
+    approvalStore,
+    webOrigin: process.env.OPSPILOT_WEB_ORIGIN,
   });
   const port = Number(process.env.PORT ?? 3000);
   app.listen(port, () => {

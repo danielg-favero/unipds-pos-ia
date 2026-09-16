@@ -11,11 +11,13 @@ import { MemoryConversationSummaryStore } from "../store/memory-conversation-sum
 import { MemoryOpsStore } from "../store/memory.js";
 import { SqliteMemoryStore } from "../store/sqlite/sqlite-memory-store.js";
 import { SqliteRequestTraceStore } from "../store/sqlite/sqlite-request-trace-store.js";
+import { SqliteApprovalStore } from "../store/sqlite/sqlite-approval-store.js";
 import type { ServerDeps } from "./server.js";
 import { createServer } from "./server.js";
 
 const newMemoryStore = () => new SqliteMemoryStore(":memory:");
 const newTraceStore = () => new SqliteRequestTraceStore(":memory:");
+const newApprovalStore = () => new SqliteApprovalStore(":memory:");
 
 /** Estratégia fake determinística: nenhuma chamada de rede/modelo. */
 function fakeStrategy(
@@ -71,7 +73,7 @@ async function startServer(deps: ServerDeps): Promise<{ baseUrl: string; close: 
   await new Promise<void>((resolve) => server.once("listening", resolve));
   const { port } = server.address() as AddressInfo;
   return {
-    baseUrl: `http://127.0.0.1:${port}`,
+    baseUrl: `http://127.0.0.1:${port}/opspilot`,
     close: () => new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve()))),
   };
 }
@@ -100,6 +102,7 @@ describe("POST /chat", () => {
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
         requestTraceStore: newTraceStore(),
+        approvalStore: newApprovalStore(),
       }));
     });
     after(() => close());
@@ -137,6 +140,7 @@ describe("POST /chat", () => {
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
         requestTraceStore: newTraceStore(),
+        approvalStore: newApprovalStore(),
       }));
     });
     after(() => close());
@@ -192,6 +196,7 @@ describe("POST /chat", () => {
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
         requestTraceStore: newTraceStore(),
+        approvalStore: newApprovalStore(),
       }));
     });
     after(() => close());
@@ -225,6 +230,7 @@ describe("POST /chat", () => {
         summaryStore,
         memoryStore: newMemoryStore(),
         requestTraceStore: newTraceStore(),
+        approvalStore: newApprovalStore(),
         historySummarizerFn: fakeSummarizer,
       }));
     });
@@ -288,6 +294,7 @@ describe("POST /chat", () => {
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
         requestTraceStore: newTraceStore(),
+        approvalStore: newApprovalStore(),
       }));
     });
     after(() => close());
@@ -333,6 +340,7 @@ describe("POST /chat", () => {
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
         requestTraceStore: newTraceStore(),
+        approvalStore: newApprovalStore(),
       }));
     });
     after(() => close());
@@ -367,6 +375,7 @@ describe("POST /chat", () => {
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
         requestTraceStore: newTraceStore(),
+        approvalStore: newApprovalStore(),
         timeoutMs: 20,
       });
       try {
@@ -394,6 +403,7 @@ describe("POST /chat", () => {
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore,
         requestTraceStore: newTraceStore(),
+        approvalStore: newApprovalStore(),
       }));
     });
     after(() => close());
@@ -438,6 +448,7 @@ describe("POST /chat", () => {
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
         requestTraceStore: newTraceStore(),
+        approvalStore: newApprovalStore(),
       }));
     });
     after(() => close());
@@ -487,6 +498,7 @@ describe("POST /chat", () => {
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore,
         requestTraceStore: newTraceStore(),
+        approvalStore: newApprovalStore(),
       }));
     });
     after(() => close());
@@ -528,6 +540,7 @@ describe("POST /chat", () => {
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
         requestTraceStore: newTraceStore(),
+        approvalStore: newApprovalStore(),
       }));
     });
     after(() => close());
@@ -591,6 +604,7 @@ describe("POST /chat — métricas de contexto (010)", () => {
       summaryStore: new MemoryConversationSummaryStore(),
       memoryStore: newMemoryStore(),
       requestTraceStore: newTraceStore(),
+      approvalStore: newApprovalStore(),
     }));
 
     const res = await postChat(baseUrl, { message: "oi", userId: "u1" });
@@ -621,6 +635,7 @@ describe("POST /chat — métricas de contexto (010)", () => {
       summaryStore: new MemoryConversationSummaryStore(),
       memoryStore: newMemoryStore(),
       requestTraceStore: newTraceStore(),
+      approvalStore: newApprovalStore(),
     }));
 
     const res = await postChat(baseUrl, { message: "oi", userId: "u1" });
@@ -646,6 +661,7 @@ describe("POST/GET/DELETE /memories", () => {
       summaryStore: new MemoryConversationSummaryStore(),
       memoryStore,
       requestTraceStore: newTraceStore(),
+      approvalStore: newApprovalStore(),
     }));
   });
   after(() => close());
@@ -744,6 +760,7 @@ describe("Trace persistido e logs estruturados (015)", () => {
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
         requestTraceStore: newTraceStore(),
+        approvalStore: newApprovalStore(),
       }));
     });
     after(() => close());
@@ -791,6 +808,7 @@ describe("Trace persistido e logs estruturados (015)", () => {
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
         requestTraceStore: newTraceStore(),
+        approvalStore: newApprovalStore(),
       }));
     });
     after(() => close());
@@ -867,6 +885,7 @@ describe("GET /stats", () => {
       summaryStore: new MemoryConversationSummaryStore(),
       memoryStore: newMemoryStore(),
       requestTraceStore: newTraceStore(),
+      approvalStore: newApprovalStore(),
     }));
 
     await postChat(baseUrl, { message: "primeira", userId: "u1" });
