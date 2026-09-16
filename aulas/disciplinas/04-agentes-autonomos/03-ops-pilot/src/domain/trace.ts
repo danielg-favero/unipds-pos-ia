@@ -43,3 +43,8 @@ const formatEvent = (event: TraceEvent): string => {
  */
 export const formatTrace = (trace: readonly TraceEvent[]): string =>
   trace.map(formatEvent).join("\n");
+
+/** Rota decidida pelo grafo unificado (013) para essa execução, se houver (015: `GET /stats` agrupa por ela). */
+export const routeOf = (trace: readonly TraceEvent[]): string | undefined =>
+  trace.find((event): event is Extract<TraceEvent, { type: "route" }> => event.type === "route")
+    ?.route;

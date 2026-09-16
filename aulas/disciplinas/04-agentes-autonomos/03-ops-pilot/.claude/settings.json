@@ -11,10 +11,12 @@
       "Bash(rm -rf /Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/04-agentes-antonomos)",
       "Read(//Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/**)",
       "Bash(npx tsx *)",
-      "Bash(mkdir -p specs/013-grafo-unificado-roteador/checklists && find . -path ./node_modules -prune -o -iname \"spec-template*\" -print 2>/dev/null)"
+      "Bash(mkdir -p specs/013-grafo-unificado-roteador/checklists && find . -path ./node_modules -prune -o -iname \"spec-template*\" -print 2>/dev/null)",
+      "Bash(mkdir -p specs/015-trace-persistido-logs/checklists && date +%Y-%m-%d)"
     ],
     "additionalDirectories": [
-      "/Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/04-agentes-autonomos/03-ops-pilot/specs/013-grafo-unificado-roteador"
+      "/Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/04-agentes-autonomos/03-ops-pilot/specs/013-grafo-unificado-roteador",
+      "/Users/danielg.favero/Documents/estudos/pos-ia/aulas/disciplinas/04-agentes-autonomos/03-ops-pilot/specs/015-trace-persistido-logs"
     ]
   }
 }

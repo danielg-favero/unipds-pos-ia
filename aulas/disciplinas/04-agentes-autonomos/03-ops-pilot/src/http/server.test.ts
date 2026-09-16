@@ -10,10 +10,12 @@ import type { HistorySummarizerFn } from "../memory/history-summarizer.js";
 import { MemoryConversationSummaryStore } from "../store/memory-conversation-summary.js";
 import { MemoryOpsStore } from "../store/memory.js";
 import { SqliteMemoryStore } from "../store/sqlite/sqlite-memory-store.js";
+import { SqliteRequestTraceStore } from "../store/sqlite/sqlite-request-trace-store.js";
 import type { ServerDeps } from "./server.js";
 import { createServer } from "./server.js";
 
 const newMemoryStore = () => new SqliteMemoryStore(":memory:");
+const newTraceStore = () => new SqliteRequestTraceStore(":memory:");
 
 /** Estratégia fake determinística: nenhuma chamada de rede/modelo. */
 function fakeStrategy(
@@ -97,6 +99,7 @@ describe("POST /chat", () => {
         conversationStore: new MemoryConversationStore(),
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
+        requestTraceStore: newTraceStore(),
       }));
     });
     after(() => close());
@@ -133,6 +136,7 @@ describe("POST /chat", () => {
         conversationStore: new MemoryConversationStore(),
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
+        requestTraceStore: newTraceStore(),
       }));
     });
     after(() => close());
@@ -187,6 +191,7 @@ describe("POST /chat", () => {
         conversationStore: new MemoryConversationStore(),
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
+        requestTraceStore: newTraceStore(),
       }));
     });
     after(() => close());
@@ -219,6 +224,7 @@ describe("POST /chat", () => {
         conversationStore: new MemoryConversationStore(),
         summaryStore,
         memoryStore: newMemoryStore(),
+        requestTraceStore: newTraceStore(),
         historySummarizerFn: fakeSummarizer,
       }));
     });
@@ -281,6 +287,7 @@ describe("POST /chat", () => {
         conversationStore: new MemoryConversationStore(),
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
+        requestTraceStore: newTraceStore(),
       }));
     });
     after(() => close());
@@ -325,6 +332,7 @@ describe("POST /chat", () => {
         conversationStore: new MemoryConversationStore(),
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
+        requestTraceStore: newTraceStore(),
       }));
     });
     after(() => close());
@@ -358,6 +366,7 @@ describe("POST /chat", () => {
         conversationStore: new MemoryConversationStore(),
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
+        requestTraceStore: newTraceStore(),
         timeoutMs: 20,
       });
       try {
@@ -384,6 +393,7 @@ describe("POST /chat", () => {
         conversationStore: new MemoryConversationStore(),
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore,
+        requestTraceStore: newTraceStore(),
       }));
     });
     after(() => close());
@@ -427,6 +437,7 @@ describe("POST /chat", () => {
         conversationStore: new MemoryConversationStore(),
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
+        requestTraceStore: newTraceStore(),
       }));
     });
     after(() => close());
@@ -475,6 +486,7 @@ describe("POST /chat", () => {
         conversationStore: new MemoryConversationStore(),
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore,
+        requestTraceStore: newTraceStore(),
       }));
     });
     after(() => close());
@@ -515,6 +527,7 @@ describe("POST /chat", () => {
         conversationStore: new MemoryConversationStore(),
         summaryStore: new MemoryConversationSummaryStore(),
         memoryStore: newMemoryStore(),
+        requestTraceStore: newTraceStore(),
       }));
     });
     after(() => close());
@@ -577,6 +590,7 @@ describe("POST /chat — métricas de contexto (010)", () => {
       conversationStore: new MemoryConversationStore(),
       summaryStore: new MemoryConversationSummaryStore(),
       memoryStore: newMemoryStore(),
+      requestTraceStore: newTraceStore(),
     }));
 
     const res = await postChat(baseUrl, { message: "oi", userId: "u1" });
@@ -606,6 +620,7 @@ describe("POST /chat — métricas de contexto (010)", () => {
       conversationStore: new MemoryConversationStore(),
       summaryStore: new MemoryConversationSummaryStore(),
       memoryStore: newMemoryStore(),
+      requestTraceStore: newTraceStore(),
     }));
 
     const res = await postChat(baseUrl, { message: "oi", userId: "u1" });
@@ -630,6 +645,7 @@ describe("POST/GET/DELETE /memories", () => {
       conversationStore: new MemoryConversationStore(),
       summaryStore: new MemoryConversationSummaryStore(),
       memoryStore,
+      requestTraceStore: newTraceStore(),
     }));
   });
   after(() => close());
@@ -698,5 +714,198 @@ describe("POST/GET/DELETE /memories", () => {
   it("DELETE /memories/:id responde 400 sem userId", async () => {
     const res = await fetch(`${baseUrl}/memories/qualquer-id`, { method: "DELETE" });
     assert.equal(res.status, 400);
+  });
+});
+
+describe("Trace persistido e logs estruturados (015)", () => {
+  /** A persistência é fire-and-forget após a resposta — espera até aparecer ou estourar o prazo. */
+  async function waitForRequest(
+    baseUrl: string,
+    id: string,
+    timeoutMs = 1000,
+  ): Promise<Response> {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      const res = await fetch(`${baseUrl}/requests/${id}`);
+      if (res.status !== 404 || Date.now() > deadline) return res;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  }
+
+  describe("US1 - correlacionar uma requisição do início ao fim", () => {
+    let close: () => Promise<void>;
+    let baseUrl: string;
+
+    before(async () => {
+      ({ baseUrl, close } = await startServer({
+        strategies: { react: fakeStrategy("react", CRITIQUE_RUN) },
+        store: new MemoryOpsStore(),
+        conversationStore: new MemoryConversationStore(),
+        summaryStore: new MemoryConversationSummaryStore(),
+        memoryStore: newMemoryStore(),
+        requestTraceStore: newTraceStore(),
+      }));
+    });
+    after(() => close());
+
+    it("devolve o mesmo requestId no header X-Request-Id e no corpo", async () => {
+      const res = await postChat(baseUrl, { message: "oi", userId: "u1" });
+      assert.equal(res.status, 200);
+      const body = asRecord(await res.json());
+      assert.equal(typeof body.requestId, "string");
+      assert.equal(res.headers.get("x-request-id"), body.requestId);
+    });
+
+    it("GET /requests/:id recupera o registro e o trace depois que o chat conclui", async () => {
+      const res = await postChat(baseUrl, { message: "abra um incidente", userId: "u1" });
+      const body = asRecord(await res.json());
+      const requestId = body.requestId as string;
+
+      const found = await waitForRequest(baseUrl, requestId);
+      assert.equal(found.status, 200);
+      const foundBody = asRecord(await found.json());
+      const request = asRecord(foundBody.request);
+      assert.equal(request.id, requestId);
+      assert.equal(request.status, "ok");
+      assert.ok(Array.isArray(foundBody.trace));
+      assert.equal((foundBody.trace as unknown[]).length, CRITIQUE_RUN.trace.length);
+    });
+
+    it("GET /requests/:id com id inexistente responde 404", async () => {
+      const res = await fetch(`${baseUrl}/requests/id-nunca-visto`);
+      assert.equal(res.status, 404);
+      const body = asRecord(await res.json());
+      assert.equal(typeof body.error, "string");
+    });
+  });
+
+  describe("US2 - inspecionar as etapas internas de processamento", () => {
+    let close: () => Promise<void>;
+    let baseUrl: string;
+
+    before(async () => {
+      ({ baseUrl, close } = await startServer({
+        strategies: { react: fakeStrategy("react", CRITIQUE_RUN) },
+        store: new MemoryOpsStore(),
+        conversationStore: new MemoryConversationStore(),
+        summaryStore: new MemoryConversationSummaryStore(),
+        memoryStore: newMemoryStore(),
+        requestTraceStore: newTraceStore(),
+      }));
+    });
+    after(() => close());
+
+    it("cada evento aparece separado, com node correto, ordenado por seq", async () => {
+      const res = await postChat(baseUrl, { message: "investigue", userId: "u1" });
+      const requestId = (asRecord(await res.json()).requestId as string);
+
+      const found = await waitForRequest(baseUrl, requestId);
+      const trace = asRecord(await found.json()).trace as Record<string, unknown>[];
+
+      assert.deepEqual(
+        trace.map((item) => item.seq),
+        CRITIQUE_RUN.trace.map((_, index) => index),
+      );
+      assert.deepEqual(
+        trace.map((item) => item.node),
+        CRITIQUE_RUN.trace.map((event) => event.type),
+      );
+      assert.deepEqual(
+        trace.map((item) => item.event),
+        CRITIQUE_RUN.trace,
+      );
+    });
+  });
+});
+
+describe("GET /stats", () => {
+  let close: () => Promise<void>;
+  let baseUrl: string;
+
+  /** `/stats` só reflete requisições já persistidas (fire-and-forget) — espera até o total bater. */
+  async function waitForTotal(baseUrl: string, expected: number, timeoutMs = 1000): Promise<Record<string, unknown>> {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      const res = await fetch(`${baseUrl}/stats?since=1h`);
+      const body = (await res.json()) as Record<string, unknown>;
+      if (body.total === expected || Date.now() > deadline) return body;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  }
+
+  const okRun = (modelUsed: string, promptTokensReal: number): StrategyRun => ({
+    answer: "ok",
+    trace: [
+      { type: "route", route: "react", reason: "pergunta direta", manual: false },
+      { type: "answer", text: "ok", partial: false },
+    ],
+    metrics: {
+      llmCalls: 1,
+      latencyMs: 5,
+      historyMessages: 0,
+      contextBreakdown: ZERO_BREAKDOWN,
+      promptTokensReal,
+      modelUsed,
+    },
+  });
+
+  before(async () => {
+    let calls = 0;
+    const react: ReasoningStrategy = {
+      name: "react",
+      async run() {
+        calls += 1;
+        if (calls > 2) throw new Error("falha proposital");
+        return calls === 1 ? okRun("openai/gpt-4o-mini", 2000) : okRun("meta-llama/llama-3-8b:free", 5000);
+      },
+    };
+
+    ({ baseUrl, close } = await startServer({
+      strategies: { react },
+      store: new MemoryOpsStore(),
+      conversationStore: new MemoryConversationStore(),
+      summaryStore: new MemoryConversationSummaryStore(),
+      memoryStore: newMemoryStore(),
+      requestTraceStore: newTraceStore(),
+    }));
+
+    await postChat(baseUrl, { message: "primeira", userId: "u1" });
+    await postChat(baseUrl, { message: "segunda", userId: "u1" });
+    await postChat(baseUrl, { message: "terceira (falha)", userId: "u1" });
+  });
+  after(() => close());
+
+  it("responde 400 para since em formato inválido", async () => {
+    const res = await fetch(`${baseUrl}/stats?since=abc`);
+    assert.equal(res.status, 400);
+  });
+
+  it("agrega total/erros/tokens/custo e p50/p95 de latência", async () => {
+    const body = await waitForTotal(baseUrl, 3);
+    assert.equal(body.total, 3);
+    assert.equal(body.errors, 1);
+    assert.equal(body.tokens, 7000);
+    // gpt-4o-mini cobra; llama :free não. custo > 0 mas não exatamente previsível pela
+    // tabela de preços interna — só confirmamos que reflete o modelo pago.
+    assert.ok((body.costUsd as number) > 0);
+    const latencyMs = body.latencyMs as { p50: number; p95: number };
+    assert.equal(typeof latencyMs.p50, "number");
+    assert.equal(typeof latencyMs.p95, "number");
+  });
+
+  it("agrupa por rota e por modelo", async () => {
+    const body = await waitForTotal(baseUrl, 3);
+    const byRoute = body.byRoute as { key: string; total: number }[];
+    const byModel = body.byModel as { key: string; total: number }[];
+
+    const reactGroup = byRoute.find((g) => g.key === "react");
+    assert.equal(reactGroup?.total, 2);
+    const unknownRouteGroup = byRoute.find((g) => g.key === "desconhecida");
+    assert.equal(unknownRouteGroup?.total, 1); // a requisição com erro não tem rota
+
+    const paidModel = byModel.find((g) => g.key === "openai/gpt-4o-mini");
+    assert.equal(paidModel?.total, 1);
+    const freeModel = byModel.find((g) => g.key === "meta-llama/llama-3-8b:free");
+    assert.equal(freeModel?.total, 1);
   });
 });

@@ -44,6 +44,13 @@ export class UnsupportedByStoreError extends DomainError {
   }
 }
 
+/** `GET /requests/:id` com um id que nunca foi gravado em `requests` (FR-007). */
+export class RequestNotFoundError extends DomainError {
+  constructor(readonly requestId: string) {
+    super(`Requisição não encontrada: ${requestId}`);
+  }
+}
+
 export class UnknownStrategyError extends DomainError {
   constructor(
     readonly requested: string,

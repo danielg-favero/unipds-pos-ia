@@ -311,3 +311,18 @@ const result = // Injeta o histórico no contexto
 ```
 
 - **Memória semântica**: Fatos e preferências do usuário guardados como embeddings
+
+## Observabilidade
+
+A observabilidade é a capacidade de entender o que está acontecendo em um sistema apenas olhando para sinais que ele emite.
+
+Em um software comum, é auditável o que aconteceu no sistema. Em softwares com agentes autônomos é preciso auditar o por que ele tomou determinada decisão
+
+### Matriz de autonomia
+
+Toda ação do agente vai cair em 4 faixas de possibilidade:
+
+1. **O agente decide sozinho** (ação com 0 risco, como responder a uma pergunta, pode ser reversível)
+2. **Decide e registra** (ação reversível, mas que muda algum estado)
+3. **Pedir aprovação** (Ações destrutivas)
+4. **Não fazer nada**

@@ -17,3 +17,14 @@ curl -s localhost:3000/memories -X POST -H 'Content-Type: application/json' -d '
 curl -s localhost:3000/chat -X POST -H 'Content-Type: application/json' -d '{"message":"organize meu plantão", "userId": "u-42"}' | jq '{answer, recalledMemories: .metrics.recalledMemories, historyMessages: .metrics.histohistoryMessages}'
 
 curl -s localhost:3000/chat -X POST -H 'Content-Type: application/json' -d '{"message":"gostaria de ver os incidentes abertos com status firing em primeiro e os resolved por último", "userId": "u-42"}' | jq '{answer, recalledMemories: .metrics.recalledMemories, historyMessages: .metrics.histohistoryMessages}'
+
+# teste de observabilidade
+RID=$(curl -s localhost:3000/chat -X POST \
+    -H 'content-type: application/json' \
+    -d '{"message": "resolver o incidente mais antigo", "userId": "U-42"}' \
+    | jq -r .requestId)
+
+curl -s "localhost:3000/requests/$RID" | jq .
+
+# tabela de stats
+curl -s "localhost:3000/stats?since=24h" | jq .

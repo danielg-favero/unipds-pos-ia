@@ -46,3 +46,25 @@ export const forgetQuerySchema = z
   .strict();
 
 export type ForgetQuery = z.infer<typeof forgetQuerySchema>;
+
+/** Path param `:id` de `GET /requests/:id` (015). */
+export const requestIdParamSchema = z
+  .object({
+    id: z.string().min(1),
+  })
+  .strict();
+
+export type RequestIdParam = z.infer<typeof requestIdParamSchema>;
+
+/** Query string de `GET /stats`. `since` no formato `<inteiro><s|m|h|d>` (ex.: "24h"); default "24h". */
+export const statsQuerySchema = z
+  .object({
+    since: z
+      .string()
+      .regex(/^\d+[smhd]$/, "formato esperado: <inteiro><s|m|h|d>, ex. 24h")
+      .optional()
+      .default("24h"),
+  })
+  .strict();
+
+export type StatsQuery = z.infer<typeof statsQuerySchema>;
