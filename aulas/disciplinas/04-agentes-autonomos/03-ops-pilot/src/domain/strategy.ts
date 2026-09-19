@@ -29,6 +29,13 @@ export type TraceEvent =
       readonly primaryModel: string;
       readonly fallbackModel: string;
       readonly reason: string;
+    }
+  /** Transição de responsabilidade no modo equipe (017): supervisor → papel, ou papel → "done" ao concluir/atingir o teto de 8. */
+  | {
+      readonly type: "handoff";
+      readonly from: "supervisor" | "analista" | "planejador" | "executor";
+      readonly to: "analista" | "planejador" | "executor" | "done";
+      readonly brief: string;
     };
 
 export type RunMetrics = {

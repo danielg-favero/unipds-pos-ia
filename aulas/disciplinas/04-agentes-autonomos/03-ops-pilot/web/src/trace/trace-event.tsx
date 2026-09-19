@@ -95,6 +95,15 @@ export function TraceEventView({ event }: { readonly event: TraceEvent }) {
           </span>
         </div>
       );
+    case "handoff":
+      return (
+        <div style={row}>
+          {label("Handoff", "var(--color-primary)")}
+          <span>
+            {event.from} → {event.to}: {event.brief}
+          </span>
+        </div>
+      );
     default: {
       const exhaustive: never = event;
       return exhaustive;

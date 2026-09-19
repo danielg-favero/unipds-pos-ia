@@ -326,3 +326,22 @@ Toda ação do agente vai cair em 4 faixas de possibilidade:
 2. **Decide e registra** (ação reversível, mas que muda algum estado)
 3. **Pedir aprovação** (Ações destrutivas)
 4. **Não fazer nada**
+
+## Sistemas Multi-Agentes
+
+Um sistema com apenas um agente acaba realizando muitas tarefas e pode acabar respondendo de forma medíocre. Delegar essas tarefas para outros agentes pode acabar permitindo que eles respondam de forma mais especializada e com maior qualidade.
+
+### Handoff
+
+São os resultados que um agente entrega para o outro. Cada handoff é registrado em um trace de execução
+
+### Blackboard
+
+Quadro de anotações compartilhado entre os agentes. Quando dois ou mais agentes discordarem, existe um padrão de consenso para resolver essa discórdia, pode-se haver um juiz que decide quem irá vencer
+
+### Estrutura básica de um sistema multi-agente
+
+1. **Supervisor**: recebe a tarefa e decide qual agente deve ser chamado para executá-la
+2. **Planejador**: recebe a tarefa e cria um plano para resolvê-la
+3. **Executor**: executa a ação, que pode ser uma chamada a uma API
+4. **Analista**: somente le e analisa o resultado da ação

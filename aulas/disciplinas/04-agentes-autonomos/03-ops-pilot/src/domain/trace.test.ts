@@ -48,6 +48,13 @@ describe("formatTrace — por tipo de evento", () => {
       "[answer] pronto (parcial)",
     );
   });
+
+  it("formata handoff", () => {
+    assert.equal(
+      formatTrace([{ type: "handoff", from: "supervisor", to: "analista", brief: "iniciar investigação" }]),
+      "[handoff] supervisor → analista: iniciar investigação",
+    );
+  });
 });
 
 describe("formatTrace — determinismo", () => {

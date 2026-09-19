@@ -1,5 +1,6 @@
 import { UnknownStrategyError } from "../domain/errors.js";
 import type { ReasoningStrategy } from "../domain/strategy.js";
+import { teamStrategy } from "../team/team-graph.js";
 import { planAndExecuteStrategy } from "./plan-and-execute.js";
 import { productionStrategy, routableStrategies } from "./production-graph.js";
 import { reactStrategy } from "./react.js";
@@ -24,6 +25,8 @@ export const strategies: Readonly<Record<string, ReasoningStrategy>> = {
   // usado apenas para validar overrides explícitos de `strategy` em /chat.
   reflect: routableStrategies.reflect,
   [productionStrategy.name]: productionStrategy,
+  // Modo equipe (017): supervisor multi-agente sobre um blackboard de papéis (analista/planejador/executor).
+  [teamStrategy.name]: teamStrategy,
 };
 
 export const strategyNames = (): string[] => Object.keys(strategies).toSorted();

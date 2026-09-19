@@ -23,6 +23,12 @@ export type TraceEvent =
       readonly primaryModel: string;
       readonly fallbackModel: string;
       readonly reason: string;
+    }
+  | {
+      readonly type: "handoff";
+      readonly from: "supervisor" | "analista" | "planejador" | "executor";
+      readonly to: "analista" | "planejador" | "executor" | "done";
+      readonly brief: string;
     };
 
 export type RunMetrics = {

@@ -34,6 +34,8 @@ const formatEvent = (event: TraceEvent): string => {
       return `[route] ${event.route}${event.manual ? " (manual)" : ""}: ${event.reason}`;
     case "fallback":
       return `[fallback] ${event.primaryModel} → ${event.fallbackModel}: ${event.reason}`;
+    case "handoff":
+      return `[handoff] ${event.from} → ${event.to}: ${event.brief}`;
   }
 };
 
