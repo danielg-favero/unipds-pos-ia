@@ -18,7 +18,12 @@ $$
 2. [Tipos de agente](#tipos-de-agente)
 3. [Spec Driven Development (SDD)](#spec-driven-development-sdd)
 4. [Arquitetura de agentes de código](#arquitetura-de-agentes-de-código)
-5. [Laboratório: `notas-api`](#laboratório-notas-api)
+5. [Padrões de raciocínio](#padrões-de-raciocínio)
+6. [Spec Kit](#spec-kit)
+7. [Memória de agentes](#memória-de-agentes)
+8. [Observabilidade](#observabilidade)
+9. [Sistemas Multi-Agentes](#sistemas-multi-agentes)
+10. [Projetos práticos](#projetos-práticos)
 
 ## Agent Loop
 
@@ -107,11 +112,11 @@ Age da mesma forma que o task-based, mas faz perguntas ao humano durante a execu
 
 ### Goal-Based
 
-Ele recebe um objetivo amplo, transforma em um plano executável (todo list) e executa todos após isso.
+Recebe um objetivo amplo, transforma em um plano executável (todo list) e executa os passos em seguida, com revisão humana entre as fases.
 
 ### Autonomous
 
-Não recebe nenhuma instrução humana, o agente reage a eventos / triggers.
+Não recebe instrução humana: o agente reage a eventos / triggers.
 
 ## Spec Driven Development (SDD)
 
@@ -224,7 +229,7 @@ Exemplo: Agente de monitoramento de incidentes
 Prompt:
 
 ```
-Quais os alteras críticos que estão acontecendo agora
+Quais os alertas críticos que estão acontecendo agora
 ```
 
 ```
@@ -232,11 +237,11 @@ thought:        O plantonista quer a contagem de alertas críticos. Vou listar o
 
 action:         list_alerts {"status": "firing"}
 
-observation:    [{"serice": "checkout", "severity": "critical", ...}, {"service": "payments", "severity": "critical", ...}]
+observation:    [{"service": "checkout", "severity": "critical", ...}, {"service": "payments", "severity": "critical", ...}]
 
-thought         Dois são críticos. Posso responder.
+thought:        Dois são críticos. Posso responder.
 
-answer          2 alertas críticos disparando: checkout (p99 > 2s) e payments (5xx em 8%)
+answer:         2 alertas críticos disparando: checkout (p99 > 2s) e payments (5xx em 8%)
 ```
 
 > Esse rastro de pensamento é chamado de `reasoning trace`
@@ -275,7 +280,7 @@ e inicializado no projeto desejado:
 specify init my-project
 ```
 
-ou direto no pasta do projeto
+ou direto na pasta do projeto
 
 ```bash
 specify init .
@@ -304,10 +309,10 @@ Uma ferramenta que apaga, a pedido do usuário, o que o sistema aprendeu dele
 - **Memória Episódica**: Diário do que aconteceu e na ordem que aconteceu. Fluxo de uma memória episódica
 
 ```typescript
-const history = // recurar o histórico de mensagens
+const history = // recuperar o histórico de mensagens
 const result = // Injeta o histórico no contexto
 
-// Restante da execuçãi
+// Restante da execução
 ```
 
 - **Memória semântica**: Fatos e preferências do usuário guardados como embeddings
@@ -344,4 +349,23 @@ Quadro de anotações compartilhado entre os agentes. Quando dois ou mais agente
 1. **Supervisor**: recebe a tarefa e decide qual agente deve ser chamado para executá-la
 2. **Planejador**: recebe a tarefa e cria um plano para resolvê-la
 3. **Executor**: executa a ação, que pode ser uma chamada a uma API
-4. **Analista**: somente le e analisa o resultado da ação
+4. **Analista**: somente lê e analisa o resultado da ação
+
+## Projetos práticos
+
+| Projeto | Foco |
+| --- | --- |
+| [`notas-api`](02-arquitetura-de-agentes-de-codigo/notas-api) | Laboratório de arquitetura de agentes de código: constituição, regras, skills e guardrails |
+| [`ops-pilot`](03-ops-pilot/README.md) | Agente de SRE completo: ReAct, plan-and-execute, reflexão, memória, guardrails, observabilidade, MCP, interface web e modo multi-agente |
+
+Cada conceito deste documento aparece no OpsPilot:
+
+| Conceito | Onde no OpsPilot |
+| --- | --- |
+| Agent loop / ReAct | `src/agents/react.ts` |
+| Plan-and-Execute | `src/agents/plan-and-execute.ts` |
+| Reflection | `src/agents/reflection.ts` |
+| Memória (episódica, semântica, reflexo, esquecimento) | `src/memory/`, `forget_preference` |
+| Matriz de autonomia | `src/agents/approval-guardrail.ts` |
+| Observabilidade | `src/obs/`, trace persistido |
+| Multi-agente (supervisor, blackboard, handoff) | `src/team/` |
