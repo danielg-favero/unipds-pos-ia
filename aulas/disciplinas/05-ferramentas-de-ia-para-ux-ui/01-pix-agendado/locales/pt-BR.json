@@ -1,0 +1,227 @@
+{
+  "CONTACTS_LOAD_FAILED": {
+    "title": "Contatos indisponíveis",
+    "message": "Não foi possível carregar seus contatos agora. Verifique sua conexão e tente novamente.",
+    "action_label": "Tentar novamente"
+  },
+  "CONTACTS_EMPTY": {
+    "title": "Nenhum contato salvo",
+    "message": "Para agendar uma transferência, adicione um contato ou digite a Chave Pix do destinatário.",
+    "action_label": "Adicionar contato"
+  },
+  "CONTACTS_SEARCH_EMPTY": {
+    "title": "Nenhum contato encontrado",
+    "message": "Não encontramos contatos para \"{term}\". Confira a grafia ou digite a Chave Pix do destinatário.",
+    "action_label": "Digitar Chave Pix"
+  },
+  "PIX_KEY_FORMAT_UNRECOGNIZED": {
+    "title": "Formato não reconhecido",
+    "message": "Use CPF, CNPJ, e-mail, celular ou chave aleatória. Confira os caracteres e tente novamente.",
+    "action_label": "Corrigir Chave Pix"
+  },
+  "PIX_KEY_NOT_FOUND": {
+    "title": "Chave Pix não encontrada",
+    "message": "Não localizamos esta Chave Pix. Confirme os dados com o destinatário ou escolha outro contato.",
+    "action_label": "Escolher outro contato"
+  },
+  "PIX_KEY_CHANGED": {
+    "title": "Chave Pix atualizada",
+    "message": "Esta Chave Pix mudou de titular ou de instituição. Confirme os dados com o destinatário antes de seguir.",
+    "action_label": "Revisar destinatário"
+  },
+  "AMOUNT_REQUIRED": {
+    "title": "Informe o valor",
+    "message": "O valor do agendamento precisa ser maior que R$ 0,00. Digite quanto deseja transferir.",
+    "action_label": "Informar valor"
+  },
+  "AMOUNT_FORMAT_UNRECOGNIZED": {
+    "title": "Formato de valor não reconhecido",
+    "message": "Use apenas números, com os centavos após a vírgula. Exemplo: 150,00.",
+    "action_label": "Corrigir valor"
+  },
+  "AMOUNT_EXCEEDS_DAILY_LIMIT": {
+    "title": "Valor acima do limite diário",
+    "message": "Para {date}, ainda é possível agendar até {remaining_limit}. Ajuste o valor ou escolha outra data.",
+    "action_label": "Ajustar valor"
+  },
+  "AMOUNT_EXCEEDS_DAILY_LIMIT_ACCUMULATED": {
+    "title": "Limite do dia já comprometido",
+    "message": "Com os agendamentos de {date}, o limite de R$ 5.000,00 seria ultrapassado. Reduza o valor ou mude a data.",
+    "action_label": "Escolher outra data"
+  },
+  "AMOUNT_EXCEEDS_NIGHT_LIMIT": {
+    "title": "Valor acima do limite noturno",
+    "message": "Entre 20h e 6h, o limite por transferência é {night_limit}. Ajuste o valor para concluir o agendamento.",
+    "action_label": "Ajustar valor"
+  },
+  "INSUFFICIENT_BALANCE": {
+    "title": "Saldo insuficiente",
+    "message": "Seu saldo disponível é {balance}. Ajuste o valor ou adicione saldo para concluir o agendamento.",
+    "action_label": "Ajustar valor"
+  },
+  "DATE_REQUIRED": {
+    "title": "Escolha uma data",
+    "message": "Selecione no calendário o dia em que a transferência deve ser feita.",
+    "action_label": "Escolher data"
+  },
+  "DATE_IN_PAST": {
+    "title": "Esta data já passou",
+    "message": "O agendamento precisa ser para uma data futura. Escolha um dia a partir de amanhã.",
+    "action_label": "Escolher nova data"
+  },
+  "DATE_IS_TODAY": {
+    "title": "Quer transferir hoje?",
+    "message": "Para hoje, use o Pix imediato e a transferência é feita na hora. O agendamento vale a partir de amanhã.",
+    "action_label": "Fazer Pix agora"
+  },
+  "DATE_BEYOND_MAX": {
+    "title": "Data fora do período permitido",
+    "message": "É possível agendar com até {max_days} dias de antecedência. Escolha uma data até {max_date}.",
+    "action_label": "Escolher nova data"
+  },
+  "DATE_BECAME_TODAY": {
+    "title": "A data do agendamento mudou",
+    "message": "Passou da meia-noite e {date} agora é hoje. Faça um Pix imediato ou escolha uma nova data.",
+    "action_label": "Fazer Pix agora"
+  },
+  "AUTH_PASSWORD_MISMATCH": {
+    "title": "Senha não confere",
+    "message": "A senha digitada não confere com a cadastrada. Restam {attempts_left} tentativas.",
+    "action_label": "Tentar novamente"
+  },
+  "AUTH_BIOMETRY_FAILED": {
+    "title": "Biometria não reconhecida",
+    "message": "Não foi possível confirmar sua identidade pela biometria. Tente de novo ou use sua senha.",
+    "action_label": "Usar senha"
+  },
+  "AUTH_LOCKED": {
+    "title": "Confirmação pausada",
+    "message": "Por segurança, pausamos a confirmação após várias tentativas. Tente em {minutes} minutos ou redefina a senha.",
+    "action_label": "Redefinir senha"
+  },
+  "SESSION_EXPIRED": {
+    "title": "Sessão encerrada",
+    "message": "Por segurança, sua sessão expirou. Entre novamente: os dados do agendamento foram mantidos.",
+    "action_label": "Entrar novamente"
+  },
+  "NETWORK_OFFLINE": {
+    "title": "Sem conexão com a internet",
+    "message": "Verifique seu Wi-Fi ou dados móveis. Os dados preenchidos continuam salvos.",
+    "action_label": "Tentar novamente"
+  },
+  "SCHEDULE_TIMEOUT_PENDING": {
+    "title": "Confirmando seu agendamento",
+    "message": "A resposta demorou mais que o esperado. Estamos verificando o status; não é preciso agendar de novo.",
+    "action_label": "Consultar status"
+  },
+  "SCHEDULE_FAILED": {
+    "title": "Agendamento não concluído",
+    "message": "Não foi possível criar o agendamento e nenhum valor foi movimentado. Revise os dados e tente novamente.",
+    "action_label": "Tentar novamente"
+  },
+  "SERVICE_UNAVAILABLE": {
+    "title": "Serviço temporariamente indisponível",
+    "message": "O Pix Agendado está instável no momento. Seus dados foram mantidos; tente novamente em alguns minutos.",
+    "action_label": "Tentar novamente"
+  },
+  "ACCOUNT_RESTRICTED": {
+    "title": "Conta com restrição",
+    "message": "Não foi possível concluir o agendamento por uma restrição na conta. Fale com a central para regularizar.",
+    "action_label": "Falar com a central"
+  },
+  "SCHEDULE_DUPLICATE_REQUEST": {
+    "title": "Agendamento já registrado",
+    "message": "Este pedido já foi recebido e agendado uma vez. Consulte os detalhes na lista de agendamentos.",
+    "action_label": "Ver agendamentos"
+  },
+  "SCHEDULES_LOAD_FAILED": {
+    "title": "Agendamentos indisponíveis",
+    "message": "Não foi possível carregar seus agendamentos. Verifique sua conexão e tente novamente.",
+    "action_label": "Tentar novamente"
+  },
+  "SCHEDULES_EMPTY": {
+    "title": "Nenhum Pix agendado",
+    "message": "Programe transferências para datas futuras e acompanhe todas por aqui.",
+    "action_label": "Agendar Pix"
+  },
+  "CANCEL_CONFIRMATION": {
+    "title": "Cancelar este agendamento?",
+    "message": "A transferência de {amount} para {recipient} em {date} não será feita. Esta ação não pode ser desfeita.",
+    "action_label": "Cancelar agendamento"
+  },
+  "CANCEL_ALREADY_CANCELED": {
+    "title": "Agendamento já cancelado",
+    "message": "Este agendamento foi cancelado antes, talvez em outro dispositivo. Nenhuma transferência será feita.",
+    "action_label": "Ver agendamentos"
+  },
+  "CANCEL_DEADLINE_PASSED": {
+    "title": "Prazo de cancelamento encerrado",
+    "message": "O cancelamento é possível até {cutoff_time} do dia agendado. A transferência seguirá como programada.",
+    "action_label": "Ver detalhes"
+  },
+  "CANCEL_NOT_ALLOWED_PROCESSING": {
+    "title": "Transferência em processamento",
+    "message": "Este agendamento já começou a ser processado e não pode mais ser cancelado. Acompanhe o resultado na lista.",
+    "action_label": "Acompanhar status"
+  },
+  "CANCEL_NOT_ALLOWED_EXECUTED": {
+    "title": "Transferência já realizada",
+    "message": "Este agendamento já foi concluído. Para reaver o valor, combine a devolução com o destinatário.",
+    "action_label": "Ver comprovante"
+  },
+  "CANCEL_FAILED": {
+    "title": "Cancelamento não concluído",
+    "message": "Não foi possível cancelar agora e o agendamento continua ativo. Verifique sua conexão e tente novamente.",
+    "action_label": "Tentar novamente"
+  },
+  "EXECUTION_FAILED_INSUFFICIENT_BALANCE": {
+    "title": "Pix agendado não realizado",
+    "message": "Faltou saldo em {date} para transferir {amount} a {recipient}. Adicione saldo e faça um novo Pix.",
+    "action_label": "Fazer novo Pix"
+  },
+  "EXECUTION_FAILED_LIMIT_EXCEEDED": {
+    "title": "Pix agendado não realizado",
+    "message": "A transferência de {amount} ultrapassaria o limite diário em {date}. Ajuste o valor e faça um novo Pix.",
+    "action_label": "Fazer novo Pix"
+  },
+  "EXECUTION_FAILED_RECIPIENT_UNAVAILABLE": {
+    "title": "Pix agendado não realizado",
+    "message": "A Chave Pix de {recipient} não está mais ativa. Confirme a nova chave com o destinatário e agende de novo.",
+    "action_label": "Agendar novamente"
+  },
+  "RECEIPT_DOWNLOAD_FAILED": {
+    "title": "Comprovante indisponível",
+    "message": "Não foi possível gerar o comprovante de agendamento agora. Tente novamente em instantes.",
+    "action_label": "Tentar novamente"
+  },
+  "SCHEDULE_SUCCESS": {
+    "title": "Pix agendado com sucesso",
+    "message": "A transferência de {amount} para {recipient} será feita em {date}. Se precisar, cancele até {cutoff_time}.",
+    "action_label": "Ver comprovante"
+  },
+  "DRAFT_RESTORED": {
+    "title": "Dados do agendamento mantidos",
+    "message": "Recuperamos o agendamento que estava em preenchimento. Revise os dados e confirme para concluir.",
+    "action_label": "Revisar agendamento"
+  },
+  "RECEIPT_SAVED": {
+    "title": "Comprovante salvo",
+    "message": "O comprovante de agendamento foi salvo no seu dispositivo.",
+    "action_label": "Abrir comprovante"
+  },
+  "SCHEDULE_REMINDER": {
+    "title": "Pix agendado para amanhã",
+    "message": "Amanhã, {date}, faremos a transferência de {amount} para {recipient}. Mantenha o saldo disponível.",
+    "action_label": "Ver detalhes"
+  },
+  "CANCEL_SUCCESS": {
+    "title": "Agendamento cancelado",
+    "message": "A transferência de {amount} para {recipient} em {date} não será mais feita.",
+    "action_label": "Ver agendamentos"
+  },
+  "EXECUTION_SUCCESS": {
+    "title": "Pix agendado realizado",
+    "message": "Transferimos {amount} para {recipient} hoje, como programado. O comprovante já está disponível.",
+    "action_label": "Ver comprovante"
+  }
+}

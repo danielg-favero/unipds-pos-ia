@@ -1,0 +1,26 @@
+[
+  {
+    "ticket_id": "TKT-101",
+    "original_ref": "tkt_01",
+    "category": "BUG_CRITICO",
+    "severity": "ALTA",
+    "user_pain": "A tela fica branca durante o Pix e o usuário precisa fechar e reabrir o app para continuar.",
+    "proposed_action": "Buscar nos logs de crash e na telemetria o ponto onde a tela de Pix deixa de renderizar. Adicionar um error boundary que mostre um estado de erro com opção de tentar de novo, em vez da tela branca. Antes de liberar uma nova tentativa, conferir se a transação já foi concluída, para evitar Pix em duplicidade."
+  },
+  {
+    "ticket_id": "TKT-102",
+    "original_ref": "tkt_05",
+    "category": "BUG_CRITICO",
+    "severity": "ALTA",
+    "user_pain": "O app fecha ao agendar um pagamento para o dia 31 em meses de 30 dias (iPhone 13).",
+    "proposed_action": "Corrigir o cálculo de datas do agendamento: quando o dia escolhido não existir no mês, usar o último dia útil do mês. Validar a data antes de montar o objeto Date e mostrar ao usuário qual data será usada. Criar testes unitários para os dias 29, 30 e 31, incluindo fevereiro e anos bissextos."
+  },
+  {
+    "ticket_id": "TKT-103",
+    "original_ref": "tkt_06",
+    "category": "UX_UI_IMPROVEMENT",
+    "severity": "MEDIA",
+    "user_pain": "Agora são necessários 3 cliques para encontrar o comprovante de transferência, que antes ficava em destaque.",
+    "proposed_action": "Mostrar o botão de comprovante, com as opções de ver e compartilhar, logo na tela de sucesso da transferência. Adicionar também um atalho em cada item do extrato. Medir o tempo até o usuário acessar o comprovante antes e depois da mudança."
+  }
+]
