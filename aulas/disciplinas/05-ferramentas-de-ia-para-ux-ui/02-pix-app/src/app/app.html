@@ -1,0 +1,36 @@
+<aside>
+  <span class="brand">Pix App</span>
+  <button
+    type="button"
+    class="menu-toggle"
+    aria-controls="menu-principal"
+    [attr.aria-expanded]="isMenuOpen()"
+    [attr.aria-label]="isMenuOpen() ? 'Fechar menu' : 'Abrir menu'"
+    (click)="toggleMenu()"
+  >
+    <span class="material-symbols-outlined" aria-hidden="true">{{
+      isMenuOpen() ? 'close' : 'menu'
+    }}</span>
+  </button>
+  <nav id="menu-principal" aria-label="Menu principal" [class.open]="isMenuOpen()">
+    <ul>
+      <li>
+        <a
+          routerLink="/"
+          (click)="closeMenu()"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          [routerLinkActiveOptions]="{ exact: true }"
+          >Pix</a
+        >
+      </li>
+      <li>
+        <a routerLink="/extrato" routerLinkActive="active" (click)="closeMenu()">Extrato</a>
+      </li>
+    </ul>
+  </nav>
+</aside>
+
+<main>
+  <router-outlet />
+</main>

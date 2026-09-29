@@ -1,0 +1,20 @@
+<dialog
+  #dialog
+  class="error-modal"
+  role="alertdialog"
+  aria-modal="true"
+  [attr.aria-labelledby]="titleId"
+  [attr.aria-describedby]="messageId"
+  (close)="onClose()"
+>
+  <header class="error-modal__header">
+    <span class="error-modal__icon" aria-hidden="true">!</span>
+    <h2 class="error-modal__title" [id]="titleId">{{ title() }}</h2>
+  </header>
+
+  <p class="error-modal__message" [id]="messageId">{{ message() }}</p>
+
+  <button type="button" class="error-modal__button" autofocus (click)="close()">
+    Fechar
+  </button>
+</dialog>

@@ -1,0 +1,50 @@
+/* You can add global styles to this file, and also import other style files */
+
+:root {
+  /* ===== Cores da marca ===== */
+  --color-primary: #0A192F;          /* Azul noturno profundo */
+  --color-accent: #64FFDA;           /* Verde neon — ações principais */
+  --color-error: #FF6B6B;            /* Vermelho clássico — erros */
+
+  /* ===== Paleta por tema ===== */
+  --color-background-light: #F8F9FA; /* Cinza quase branco */
+  --color-background-dark: #112240;  /* Chumbo escuro */
+  --color-text-light: #112240;       /* Texto no modo claro */
+  --color-text-dark: #FFFFFF;        /* Texto no modo escuro */
+
+  /* ===== Tokens semânticos (modo claro por padrão) ===== */
+  --color-background: var(--color-background-light);
+  --color-text: var(--color-text-light);
+  --color-text-muted: rgba(255, 255, 255, 0.64);
+
+  /* ===== Superfícies (cards e camadas sobre o fundo escuro) ===== */
+  --color-surface: #16304f;
+  --color-surface-alt: #0d1b33;
+  --color-divider: rgba(255, 255, 255, 0.08);
+
+  /* ===== Tipografia ===== */
+  --font-heading: 'Montserrat', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* ===== Espaçamentos (base 4px) ===== */
+  --spacing-unit: 4px;
+  --spacing-sm: calc(var(--spacing-unit) * 2);  /* 8px */
+  --spacing-md: calc(var(--spacing-unit) * 4);  /* 16px */
+  --spacing-lg: calc(var(--spacing-unit) * 6);  /* 24px */
+  --spacing-xl: calc(var(--spacing-unit) * 8);  /* 32px */
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}

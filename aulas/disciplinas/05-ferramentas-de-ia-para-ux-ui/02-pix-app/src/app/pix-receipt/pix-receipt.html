@@ -1,0 +1,146 @@
+<div class="receipt">
+  <div class="receipt__context">
+    <div class="receipt__context-tag">
+      <span class="pulse-dot" aria-hidden="true"></span>
+      <span>Liquidação Instantânea</span>
+    </div>
+    <div class="receipt__context-protocol">
+      <span>Protocolo:</span>
+      <span class="mono">{{ data().protocol }}</span>
+    </div>
+  </div>
+
+  <article class="receipt__card">
+    <div class="receipt__accent" aria-hidden="true"></div>
+
+    <div class="receipt__content">
+      <header class="receipt__status">
+        <div class="receipt__status-icon">
+          <span class="pulse-ring" aria-hidden="true"></span>
+          <span class="material-symbols-outlined receipt__check" aria-hidden="true">check</span>
+        </div>
+
+        <div class="receipt__status-text">
+          <span class="receipt__badge">
+            <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
+            Transferência Concluída
+          </span>
+          <h1>Pix Enviado com Sucesso</h1>
+          <p>O valor já foi creditado na conta de destino via SPI.</p>
+        </div>
+      </header>
+
+      <section class="receipt__amount" aria-label="Valor da transferência">
+        <span class="receipt__amount-label">Valor da Transferência</span>
+        <div class="receipt__amount-value">
+          <span class="receipt__currency">R$</span>
+          <span class="receipt__value">
+            {{ formattedAmount().reais }}<span class="receipt__cents">,{{ formattedAmount().centavos }}</span>
+          </span>
+        </div>
+        <div class="receipt__amount-note">
+          <span class="dot" aria-hidden="true"></span>
+          <span>Tarifa zero • ISPB Transacional</span>
+        </div>
+      </section>
+
+      <section class="receipt__details">
+        <div class="receipt__recipient">
+          <div class="receipt__recipient-info">
+            <div class="receipt__avatar">{{ data().recipientInitials }}</div>
+            <div class="receipt__recipient-text">
+              <span class="label">Destinatário</span>
+              <div class="receipt__recipient-name">
+                <span>{{ data().recipientName }}</span>
+                <span class="material-symbols-outlined" title="Favorecido Verificado" aria-hidden="true">
+                  verified
+                </span>
+              </div>
+            </div>
+          </div>
+          <span class="receipt__chip">{{ data().recipientType }}</span>
+        </div>
+
+        <dl class="receipt__rows">
+          <div class="receipt__row">
+            <dt><span class="material-symbols-outlined" aria-hidden="true">key</span>Chave Pix</dt>
+            <dd class="mono">{{ data().pixKey }}</dd>
+          </div>
+          <div class="receipt__row">
+            <dt><span class="material-symbols-outlined" aria-hidden="true">account_balance</span>Instituição</dt>
+            <dd>{{ data().institution }}</dd>
+          </div>
+          <div class="receipt__row">
+            <dt><span class="material-symbols-outlined" aria-hidden="true">schedule</span>Data e Horário</dt>
+            <dd>{{ formattedTimestamp() }}</dd>
+          </div>
+          <div class="receipt__row">
+            <dt>
+              <span class="material-symbols-outlined" aria-hidden="true">credit_score</span>Tipo de Pagamento
+            </dt>
+            <dd>
+              <span class="dot" aria-hidden="true"></span>
+              Pix Transferência
+            </dd>
+          </div>
+          <div class="receipt__row">
+            <dt>
+              <span class="material-symbols-outlined" aria-hidden="true">person_outline</span>Origem
+            </dt>
+            <dd>{{ data().origin }}</dd>
+          </div>
+        </dl>
+
+        <div class="receipt__e2e">
+          <div class="receipt__e2e-header">
+            <span><span class="material-symbols-outlined" aria-hidden="true">fingerprint</span>ID da Transação (End-to-End)</span>
+            <button type="button" class="receipt__copy" (click)="copyTransactionId()">
+              <span class="material-symbols-outlined" aria-hidden="true">{{ copied() ? 'done' : 'content_copy' }}</span>
+              <span>{{ copied() ? 'Copiado!' : 'Copiar' }}</span>
+            </button>
+          </div>
+          <div class="mono receipt__e2e-id">{{ data().transactionId }}</div>
+        </div>
+      </section>
+
+      <section class="receipt__actions-secondary">
+        <button type="button" (click)="share()">
+          <span class="material-symbols-outlined" aria-hidden="true">share</span>
+          <span>Compartilhar</span>
+        </button>
+        <button type="button" (click)="downloadPdf()">
+          <span class="material-symbols-outlined" aria-hidden="true">download</span>
+          <span>Baixar em PDF</span>
+        </button>
+      </section>
+
+      <section class="receipt__actions-primary">
+        <button type="button" class="receipt__action-main" (click)="goToStart()">
+          <span>Voltar ao Início</span>
+          <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+        </button>
+        <button type="button" class="receipt__action-ghost" (click)="goToStart()">
+          <span class="material-symbols-outlined" aria-hidden="true">add_circle</span>
+          <span>Realizar outro Pix</span>
+        </button>
+      </section>
+
+      <footer class="receipt__legal">
+        <span class="material-symbols-outlined" aria-hidden="true">lock_clock</span>
+        <p>Autenticação Bancária: <span class="mono">{{ data().authCode }}</span></p>
+      </footer>
+    </div>
+  </article>
+
+  <div class="receipt__trust">
+    <div>
+      <span class="material-symbols-outlined" aria-hidden="true">security</span>
+      <span>Bacen SPI Certificado</span>
+    </div>
+    <span class="dot" aria-hidden="true"></span>
+    <div>
+      <span class="material-symbols-outlined" aria-hidden="true">shield</span>
+      <span>Criptografia Ponta a Ponta</span>
+    </div>
+  </div>
+</div>

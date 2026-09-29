@@ -1,0 +1,115 @@
+:host {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-xl) var(--spacing-lg);
+  background-color: var(--color-primary);
+  color: var(--color-text-dark);
+}
+
+.brand {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+nav a {
+  display: block;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-left: var(--spacing-unit) solid transparent;
+  border-radius: var(--spacing-unit);
+  color: var(--color-text-dark);
+  font-family: var(--font-body);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+nav a:hover {
+  background-color: var(--color-background-dark);
+  color: var(--color-accent);
+}
+
+nav a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+nav a.active {
+  border-left-color: var(--color-accent);
+  background-color: var(--color-background-dark);
+  color: var(--color-accent);
+}
+
+main {
+  padding: var(--spacing-xl);
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+
+.menu-toggle {
+  display: none;
+  padding: var(--spacing-sm);
+  border: 0;
+  border-radius: var(--spacing-unit);
+  background: none;
+  color: var(--color-text-dark);
+  cursor: pointer;
+}
+
+.menu-toggle:hover {
+  color: var(--color-accent);
+}
+
+.menu-toggle:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  :host {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  aside {
+    flex-flow: row wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+  nav {
+    display: none;
+    flex-basis: 100%;
+  }
+
+  nav.open {
+    display: block;
+  }
+
+  main {
+    padding: var(--spacing-md);
+  }
+}

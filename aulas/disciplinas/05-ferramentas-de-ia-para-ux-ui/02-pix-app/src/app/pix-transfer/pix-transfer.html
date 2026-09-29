@@ -1,0 +1,41 @@
+@if (receiptData(); as receipt) {
+  <app-pix-receipt [data]="receipt" />
+} @else {
+  <h1>Transferência Pix</h1>
+
+  <form [formRoot]="pixForm">
+    <p>
+      <label for="pix-key">Chave Pix</label>
+      <input id="pix-key" type="text" [formField]="pixForm.pixKey" />
+      @if (pixForm.pixKey().touched() && pixForm.pixKey().invalid()) {
+        <span role="alert">{{ pixForm.pixKey().errors()[0].message }}</span>
+      }
+    </p>
+
+    <p>
+      <label for="amount">Valor</label>
+      <input id="amount" type="number" step="0.01" [formField]="pixForm.amount" />
+      @if (pixForm.amount().touched() && pixForm.amount().invalid()) {
+        <span role="alert">{{ pixForm.amount().errors()[0].message }}</span>
+      }
+    </p>
+
+    <p>
+      <label for="scheduled-date">Data de agendamento</label>
+      <input id="scheduled-date" type="date" [formField]="pixForm.scheduledDate" />
+      @if (pixForm.scheduledDate().touched() && pixForm.scheduledDate().invalid()) {
+        <span role="alert">{{ pixForm.scheduledDate().errors()[0].message }}</span>
+      }
+    </p>
+
+    <button type="submit">Confirmar</button>
+  </form>
+
+  @if (limitExceeded()) {
+    <app-error-modal
+      title="Limite Excedido"
+      message="Para sua segurança, transferências Pix acima de R$ 5.000,00 precisam ser aprovadas pelo gerente"
+      (closed)="limitExceeded.set(false)"
+    />
+  }
+}

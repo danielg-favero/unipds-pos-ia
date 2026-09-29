@@ -147,3 +147,23 @@ Sempre responda com um objeto JSON estrito, seguindo este schema:
 }
 ```
 ````
+
+## Desenvolvimento Frontend com LLMs
+
+Usando skills e agentes de código, é possível criar uma base para o desenvolvimento de aplicações frontend que contenham:
+
+- Estilização, Style Guide e Design Tokens
+- Componentes
+- Acessibilidade
+- Responsividade
+
+### Geração de interfaces gráficas com LLMs
+
+Ferramentas de LLM para geração de interfaces gráficas completas em questão de UX. É importante entender que essas ferramentas servem apenas para validação e prototipagem, não para produção.
+
+Ferramentas mais utilizadas:
+
+- [Google Stitch](https://stitch.withgoogle.com/)
+- [Lovable](https://lovable.ai/)
+- [Claude Design](https://claude.com/product/design)
+- [Figma AI](https://www.figma.com/ai/)

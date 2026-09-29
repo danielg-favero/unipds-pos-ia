@@ -1,0 +1,24 @@
+<ul class="history" aria-label="Histórico de transações Pix">
+  @for (transaction of transactions(); track transaction.id) {
+    <li class="transaction" [class.transaction--received]="transaction.type === 'received'">
+      <span class="material-symbols-outlined transaction__icon" aria-hidden="true">
+        {{ transaction.type === 'received' ? 'south_west' : 'north_east' }}
+      </span>
+
+      <div class="transaction__info">
+        <span class="transaction__title">{{ transaction.title }}</span>
+        <time class="transaction__date" [attr.datetime]="transaction.date.toISOString()">
+          {{ transaction.date | date: "dd 'de' MMM, HH:mm" : undefined : 'pt-BR' }}
+        </time>
+      </div>
+
+      <span class="transaction__amount">
+        <span class="visually-hidden">
+          {{ transaction.type === 'received' ? 'Recebido:' : 'Enviado:' }}
+        </span>
+        {{ transaction.type === 'received' ? '+' : '-' }}
+        {{ transaction.amount | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}
+      </span>
+    </li>
+  }
+</ul>
