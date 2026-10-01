@@ -2,15 +2,15 @@
 
 ## 1. Shared contract
 
-- [ ] 1.1 Add `class-validator`/`class-transformer` as dependencies of `shared-types` (and `api` if not already present via Nest) and verify `npx nx build shared-types` succeeds
-- [ ] 1.2 Create `SubmitTalkDto` class in `shared-types/src/lib/submit-talk.dto.ts` with `class-validator` decorators for `name` (string, required), `talkTitle` (string, required), `isGDE` (boolean, required), matching `SpeakerDTO`'s shape, and export it from `shared-types/src/index.ts`; verify `npx nx test shared-types` passes
+- [x] 1.1 Add `class-validator`/`class-transformer` as dependencies of `shared-types` (and `api` if not already present via Nest) and verify `npx nx build shared-types` succeeds
+- [x] 1.2 Create `SubmitTalkDto` class in `shared-types/src/lib/submit-talk.dto.ts` with `class-validator` decorators for `name` (string, required), `talkTitle` (string, required), `isGDE` (boolean, required), matching `SpeakerDTO`'s shape, and export it from `shared-types/src/index.ts`; verify `npx nx test shared-types` passes
 
 ## 2. API: validation and endpoint
 
-- [ ] 2.1 Enable a global `ValidationPipe` (`whitelist: true`, `forbidNonWhitelisted: true`, `transform: true`) in `api/src/main.ts` and verify `npx nx build api` succeeds
-- [ ] 2.2 Create `SpeakersModule` with `SpeakersController` (`POST /speakers` using `@Body() dto: SubmitTalkDto`) and `SpeakersService` (in-memory store) under `api/src/app/speakers/`, and register `SpeakersModule` in `api/src/app/app.module.ts`
-- [ ] 2.3 Add `api/src/app/speakers/speakers.controller.spec.ts` with Jest tests asserting: a valid `SubmitTalkDto` payload is accepted and returned; a payload missing `talkTitle` is rejected with `400`; a payload with `isGDE` as a wrong type is rejected with `400`; a payload with an extra unknown field is rejected with `400` — verify `npx nx test api` passes
-- [ ] 2.4 Add `api/src/app/speakers/speakers.service.spec.ts` covering the service's create/list behavior in isolation from HTTP concerns and verify `npx nx test api` passes
+- [x] 2.1 Enable a global `ValidationPipe` (`whitelist: true`, `forbidNonWhitelisted: true`, `transform: true`) in `api/src/main.ts` and verify `npx nx build api` succeeds
+- [x] 2.2 Create `SpeakersModule` with `SpeakersController` (`POST /speakers` using `@Body() dto: SubmitTalkDto`) and `SpeakersService` (in-memory store) under `api/src/app/speakers/`, and register `SpeakersModule` in `api/src/app/app.module.ts`
+- [x] 2.3 Add `api/src/app/speakers/speakers.controller.spec.ts` with Jest tests asserting: a valid `SubmitTalkDto` payload is accepted and returned; a payload missing `talkTitle` is rejected with `400`; a payload with `isGDE` as a wrong type is rejected with `400`; a payload with an extra unknown field is rejected with `400` — verify `npx nx test api` passes
+- [x] 2.4 Add `api/src/app/speakers/speakers.service.spec.ts` covering the service's create/list behavior in isolation from HTTP concerns and verify `npx nx test api` passes
 
 ## 3. Frontend: talk submission form
 
