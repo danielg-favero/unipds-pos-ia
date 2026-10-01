@@ -14,12 +14,12 @@
 
 ## 3. Frontend: talk submission form
 
-- [ ] 3.1 Add `provideHttpClient()` to `frontend/src/app/app.config.ts` and verify `npx nx build frontend` succeeds
-- [ ] 3.2 Create standalone `TalkSubmissionFormComponent` in `frontend/src/app/talk-submission/talk-submission-form.component.ts` using a Reactive `FormGroup` for field validation plus `submitting = signal(false)`, `error = signal<string | null>(null)`, and `canSubmit = computed(() => this.form.valid && !this.submitting())`; bind the submit button's `disabled` to `!canSubmit()`
-- [ ] 3.3 Add WAI-ARIA attributes: `<label>`/`for` (or `aria-label`) for each field, `aria-invalid` and `aria-describedby` on invalid fields, and a `role="alert"` region that renders `error()` so assistive tech announces submission failures
-- [ ] 3.4 Implement submit handling: on valid submit, set `submitting.set(true)`, POST the `SubmitTalkDto` via `HttpClient` to `/api/speakers`, clear `error` and reset the form on success, set `error` and re-enable the form on failure, and always reset `submitting` to `false` when the request settles
-- [ ] 3.5 Register `TalkSubmissionFormComponent` in `frontend/src/app/app.routes.ts` under a `talks/submit` (or similar) path
-- [ ] 3.6 Add `frontend/src/app/talk-submission/talk-submission-form.component.spec.ts` with Jest/Angular Testing Library-style tests asserting: on initial render the submit button is disabled and `canSubmit()` is `false`; after filling all required fields with valid values the submit button becomes enabled; while a submission is in flight the submit button is disabled again — verify `npx nx test frontend` passes
+- [x] 3.1 Add `provideHttpClient()` to `frontend/src/app/app.config.ts` and verify `npx nx build frontend` succeeds
+- [x] 3.2 Create standalone `TalkSubmissionFormComponent` in `frontend/src/app/talk-submission/talk-submission-form.component.ts` using a Reactive `FormGroup` for field validation plus `submitting = signal(false)`, `error = signal<string | null>(null)`, and `canSubmit = computed(() => this.form.valid && !this.submitting())`; bind the submit button's `disabled` to `!canSubmit()`
+- [x] 3.3 Add WAI-ARIA attributes: `<label>`/`for` (or `aria-label`) for each field, `aria-invalid` and `aria-describedby` on invalid fields, and a `role="alert"` region that renders `error()` so assistive tech announces submission failures
+- [x] 3.4 Implement submit handling: on valid submit, set `submitting.set(true)`, POST the `SubmitTalkDto` via `HttpClient` to `/api/speakers`, clear `error` and reset the form on success, set `error` and re-enable the form on failure, and always reset `submitting` to `false` when the request settles
+- [x] 3.5 Register `TalkSubmissionFormComponent` in `frontend/src/app/app.routes.ts` under a `talks/submit` (or similar) path
+- [x] 3.6 Add `frontend/src/app/talk-submission/talk-submission-form.component.spec.ts` with Jest/Angular Testing Library-style tests asserting: on initial render the submit button is disabled and `canSubmit()` is `false`; after filling all required fields with valid values the submit button becomes enabled; while a submission is in flight the submit button is disabled again — verify `npx nx test frontend` passes
 
 ## 4. Integration check
 
