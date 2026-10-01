@@ -60,6 +60,109 @@ type SubmitTalkPayload = Omit<SpeakerDTO, 'id'>;
       </button>
     </form>
   `,
+  styles: `
+    :host {
+      display: block;
+      padding: 2rem 1rem;
+    }
+
+    form {
+      max-width: 28rem;
+      margin: 0 auto;
+      padding: 2rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px rgb(0 0 0 / 0.06);
+    }
+
+    h1 {
+      margin: 0 0 1.5rem;
+      font-size: 1.5rem;
+    }
+
+    form > div {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    input[type='text'] {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      font: inherit;
+      color: inherit;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    input[aria-invalid='true'] {
+      border-color: var(--danger);
+    }
+
+    input:focus-visible,
+    button:focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    /* checkbox row */
+    form > div:has(input[type='checkbox']) {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    form > div:has(input[type='checkbox']) label {
+      margin: 0;
+      font-weight: 400;
+    }
+
+    input[type='checkbox'] {
+      width: 1.1rem;
+      height: 1.1rem;
+      accent-color: var(--primary);
+    }
+
+    [id$='-error'],
+    [role='alert'] p {
+      margin: 0.35rem 0 0;
+      font-size: 0.85rem;
+      color: var(--danger);
+    }
+
+    [role='alert'] {
+      min-height: 1.5rem;
+    }
+
+    button[type='submit'] {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      font: inherit;
+      font-weight: 600;
+      color: #fff;
+      background: var(--primary);
+      border: 0;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    button[type='submit']:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+
+    button[type='submit']:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  `,
 })
 export class TalkSubmissionFormComponent {
   private readonly http = inject(HttpClient);

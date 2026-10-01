@@ -19,8 +19,7 @@
         ],
         "format": [
           "cjs"
-        ],
-        "generatePackageJson": true
+        ]
       }
     }
   }
