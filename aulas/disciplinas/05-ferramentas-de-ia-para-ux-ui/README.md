@@ -167,3 +167,22 @@ Ferramentas mais utilizadas:
 - [Lovable](https://lovable.ai/)
 - [Claude Design](https://claude.com/product/design)
 - [Figma AI](https://www.figma.com/ai/)
+
+## Trabalhando com agentes paralelos no desenvolvimento de features
+
+Usando o git, é possível paralelizar tarefas entre múltiplos agentes de LLM. Basicamente cada agente trabalha em sua própria branch e depois é feita a merge das branches. Como as tarefas são independentes, não há conflitos de merge.
+
+Para isso, é preciso utilizar a feature `worktrees` do git.
+
+```bash
+git worktree add <pasta-de-trabalho> -b <branch>
+```
+
+Ex: criação da api e frontend em paralelo
+
+```bash
+git worktree add ../worktrees/api -b feat/api
+git worktree add ../worktrees/ui -b feat/ui
+```
+
+Uma pasta `worktrees` é criada com duas pastas `api` e `ui`. Dentro dessas pastas existe uma cópia do repostitório, cada uma em sua própria branch.
