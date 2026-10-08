@@ -1,13 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { TalkSubmissionFormComponent } from './talk-submission-form.component';
 
 describe('TalkSubmissionFormComponent', () => {
   async function setup() {
     await TestBed.configureTestingModule({
       imports: [TalkSubmissionFormComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
     const fixture = TestBed.createComponent(TalkSubmissionFormComponent);
     await fixture.whenStable();
@@ -54,5 +55,11 @@ describe('TalkSubmissionFormComponent', () => {
     const alert = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
     expect(alert?.textContent).toContain('Could not submit');
     expect(fixture.componentInstance.canSubmit()).toBe(true);
+  });
+
+  it('links to the dashboard', async () => {
+    const { fixture } = await setup();
+    const link = (fixture.nativeElement as HTMLElement).querySelector('a.secondary');
+    expect(link?.getAttribute('href')).toBe('/dashboard');
   });
 });

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { SpeakerDTO } from '@call-for-papers-platform/shared-types';
 
@@ -8,7 +9,7 @@ type SubmitTalkPayload = Omit<SpeakerDTO, 'id'>;
 
 @Component({
   selector: 'app-talk-submission-form',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()" [attr.aria-busy]="submitting()" novalidate>
@@ -58,6 +59,8 @@ type SubmitTalkPayload = Omit<SpeakerDTO, 'id'>;
       <button type="submit" [disabled]="!canSubmit()">
         {{ submitting() ? 'Submitting…' : 'Submit talk' }}
       </button>
+
+      <a class="secondary" routerLink="/dashboard">View dashboard</a>
     </form>
   `,
   styles: `
@@ -107,7 +110,8 @@ type SubmitTalkPayload = Omit<SpeakerDTO, 'id'>;
     }
 
     input:focus-visible,
-    button:focus-visible {
+    button:focus-visible,
+    a.secondary:focus-visible {
       outline: 3px solid var(--primary);
       outline-offset: 2px;
     }
@@ -161,6 +165,24 @@ type SubmitTalkPayload = Omit<SpeakerDTO, 'id'>;
     button[type='submit']:disabled {
       opacity: 0.55;
       cursor: not-allowed;
+    }
+
+    a.secondary {
+      display: block;
+      margin-top: 0.75rem;
+      padding: 0.7rem 1rem;
+      font-weight: 600;
+      text-align: center;
+      color: var(--primary);
+      background: var(--surface);
+      border: 1px solid var(--primary);
+      border-radius: var(--radius);
+      text-decoration: none;
+    }
+
+    a.secondary:hover {
+      color: var(--primary-hover);
+      border-color: var(--primary-hover);
     }
   `,
 })

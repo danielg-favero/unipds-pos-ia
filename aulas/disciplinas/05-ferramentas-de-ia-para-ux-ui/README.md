@@ -186,3 +186,72 @@ git worktree add ../worktrees/ui -b feat/ui
 ```
 
 Uma pasta `worktrees` é criada com duas pastas `api` e `ui`. Dentro dessas pastas existe uma cópia do repostitório, cada uma em sua própria branch.
+
+## Agentes assíncronos
+
+São agentes que não executam na máquina do desenvolvedor, mas em servidores na nuvem. Exemplos:
+
+- [Devin](https://devin.ai/)
+- [Google's Jules](https://jules.google/)
+
+Eles se conectam a repositórios remotos (github, gitlab, bitbucket, etc.) e como rodam na nuvem podem ser executados a qualquer lugar e a qualquer momento. Eles podem atuar em tarefas específicar ou issues nos repositórios
+
+> 💡 Boa Prática: não usar esses agentes para ficar conversando, usar eles para uma tarefa específica
+
+## Testes em aplicações utilizando IA
+
+Atualmente, frameworks de testes possuem integração nativas com LLMs para escrita de testes, execução e depuração de testes.
+
+## Cypress Prompt
+
+É possível utilizar agentes de LLM para escrever o código dos testes. Além disso, o [Cypress](https://www.cypress.io/#create) oferece uma ferramenta no seu próprio SDK para gerar testes usando [prompt](https://docs.cypress.io/app/guides/ai-test-generation#__docusaurus_skipToContent_fallback).
+
+```typescript
+describe("Cadastro de Talk - AI Driven Testing", () => {
+  it("Deve executar o fluxo de cadastro e validar o sucesso de forma semântica", () => {
+    cy.visit("/talks/submit");
+
+    cy.prompt([
+      'Type "Ada Lovelace" in the name field',
+      'Type "Analytical Engines in 2026" in the talk title field',
+      'Check the "I am a Google Developer Expert" checkbox',
+      "Click the button that submits or saves the talk",
+    ]);
+
+    cy.prompt(["Verify that a success message is visible"]);
+  });
+});
+```
+
+A vantagem dessa estratégia é que o teste é `Self Healing`, ou seja, se alguma coisa no código mudar (tag html, classe, estilo, seletor, etc.), desde que não altere regra de negócio, o teste não falhará, ainda será executado e o teste gerado ainda será corrigido para a nova versão da aplicação.
+
+## Playwright MCP
+
+Usando o [Playwright MCP](https://playwright.dev/docs/getting-started-mcp) é possível solicitar ao agente de código que execute algum teste específico, sem escrever nenhum arquivo.
+
+## Compartivo entre as duas abordagens
+
+### Cypress Prompt
+
+**Prós**:
+
+- Após o teste estar escrito, não há consumo de tokens para ser executado novamente
+- É mais barato
+- `Self Healing`
+
+**Contras**:
+
+- Caso algum elemento da tela mude, o teste pode quebrar (Esse caso considera que quem escreve o teste não tem acesso ao código fonte)
+- `Self Healing` é específico do Cypress
+
+### Playwright MCP
+
+**Prós**:
+
+- Não é preciso ser muito específico na descrição do teste
+- Além da execução de testes, é possível utilizar para automações
+
+**Contras**:
+
+- Consumo de tokens a cada execução
+- Sem documentação dos testes
