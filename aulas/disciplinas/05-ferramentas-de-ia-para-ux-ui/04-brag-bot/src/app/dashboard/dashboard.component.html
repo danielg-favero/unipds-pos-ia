@@ -1,0 +1,75 @@
+<header class="border-b-4 border-unipds-lime bg-unipds-navy-light">
+  <div class="mx-auto max-w-5xl px-4 py-6">
+    <h1 class="font-display text-3xl uppercase tracking-wide text-white sm:text-5xl">
+      Brag-Bot <span class="text-unipds-cyan">|</span>
+      <span class="text-unipds-lime">Pós IA UNIPDS</span>
+    </h1>
+  </div>
+</header>
+
+<main class="mx-auto max-w-5xl space-y-10 px-4 py-10">
+  <form
+    class="space-y-4 rounded-xl border border-unipds-cyan/30 bg-unipds-navy-light p-6"
+    (ngSubmit)="distill()"
+  >
+    <label for="achievement" class="font-display text-xl uppercase tracking-wide text-unipds-cyan">
+      Qual foi sua conquista?
+    </label>
+    <textarea
+      id="achievement"
+      name="achievement"
+      rows="5"
+      required
+      [ngModel]="prompt()"
+      (ngModelChange)="prompt.set($event)"
+      [disabled]="bragService.loading()"
+      placeholder="Ex: Migrei o pipeline de deploy e reduzi o tempo pela metade..."
+      class="w-full rounded-lg border border-unipds-gray/40 bg-unipds-navy p-3 text-white placeholder:text-unipds-gray/50 focus:border-unipds-cyan focus:outline-none disabled:opacity-60"
+    ></textarea>
+
+    <button
+      type="submit"
+      [disabled]="bragService.loading() || !prompt().trim()"
+      class="inline-flex items-center gap-2 rounded-lg bg-unipds-lime px-6 py-3 font-display text-lg uppercase tracking-wide text-unipds-navy transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      @if (bragService.loading()) {
+        <svg class="size-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25" />
+          <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+        </svg>
+        Destilando...
+      } @else {
+        Destilar Conquista
+      }
+    </button>
+  </form>
+
+  <section aria-label="Conquistas geradas">
+    @if (bragService.brags().length === 0) {
+      <p class="text-center text-unipds-gray/70">
+        Nenhuma conquista ainda. Descreva uma acima e clique em "Destilar Conquista".
+      </p>
+    } @else {
+      <div class="grid gap-6 sm:grid-cols-2">
+        @for (brag of bragService.brags(); track brag.id) {
+          <a
+            [routerLink]="['/detail', brag.id]"
+            class="group block rounded-xl border border-unipds-cyan/30 bg-unipds-navy-light p-6 transition hover:-translate-y-1 hover:border-unipds-lime"
+          >
+            <h2 class="font-display text-2xl uppercase tracking-wide text-white group-hover:text-unipds-lime">
+              {{ brag.titulo }}
+            </h2>
+            <p class="mt-3 line-clamp-3 text-sm">{{ brag.contexto }}</p>
+            <ul class="mt-4 flex flex-wrap gap-2">
+              @for (tech of brag.tecnologias; track tech) {
+                <li class="rounded-full bg-unipds-cyan/10 px-3 py-1 text-xs font-medium text-unipds-cyan">
+                  {{ tech }}
+                </li>
+              }
+            </ul>
+          </a>
+        }
+      </div>
+    }
+  </section>
+</main>

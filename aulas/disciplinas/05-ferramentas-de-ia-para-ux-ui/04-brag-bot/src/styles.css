@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Roboto:wght@400;500;700&display=swap');
+@import 'tailwindcss';
+
+/* Identidade visual UNIPDS (extraída de unipds.com.br/org-pos-ia) */
+@theme {
+  --color-unipds-navy: #040028;
+  --color-unipds-navy-light: #0d0a3d;
+  --color-unipds-cyan: #00fffe;
+  --color-unipds-lime: #d6ff00;
+  --color-unipds-gray: #ced4da;
+  --font-display: 'Anton', 'Antonio', sans-serif;
+  --font-sans: 'Roboto', sans-serif;
+}
+
+body {
+  @apply bg-unipds-navy text-unipds-gray font-sans antialiased;
+}

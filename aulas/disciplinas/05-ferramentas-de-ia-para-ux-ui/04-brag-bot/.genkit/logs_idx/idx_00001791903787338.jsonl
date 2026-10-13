@@ -1,0 +1,2 @@
+{"traceId":"6c2aa33e1ad3052b780ba21d5f74f27b","spanId":"6d7aa54f66bd76b0","timestamp":1791903797943,"severityText":"ERROR","severityNumber":17,"file":"logs-2026-10-13-12.jsonl","offset":6044,"length":2761}
+{"traceId":"6c2aa33e1ad3052b780ba21d5f74f27b","spanId":"997ff57c53c7012b","timestamp":1791903797948,"severityText":"WARN","severityNumber":13,"file":"logs-2026-10-13-12.jsonl","offset":8805,"length":2953}
