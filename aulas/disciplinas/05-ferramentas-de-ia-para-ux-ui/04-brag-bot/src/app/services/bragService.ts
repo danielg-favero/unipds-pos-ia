@@ -1,4 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 
 export interface Brag {
   id: string;
@@ -9,35 +11,49 @@ export interface Brag {
   tecnologias: string[];
 }
 
-const MOCK_DELAY_MS = 15_000;
+interface BragApiResponse {
+  id?: string;
+  title: string;
+  context: string;
+  actionTaken: string;
+  businessImpact: string;
+  metrics: string[];
+  technologiesUsed: string[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class BragService {
+  private readonly http = inject(HttpClient);
+
   readonly brags = signal<Brag[]>([]);
   readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
 
-  generateMockBrag(prompt: string): Promise<void> {
+  async generateBrag(definition: string): Promise<void> {
     this.loading.set(true);
+    this.error.set(null);
 
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const brag: Brag = {
-          id: crypto.randomUUID(),
-          titulo: 'Redução de 60% no tempo de deploy',
-          contexto:
-            prompt.trim() ||
-            'O pipeline de deploy era manual e levava mais de 40 minutos, bloqueando entregas semanais do time.',
-          impacto:
-            'Automatizei o pipeline de CI/CD, eliminando etapas manuais e permitindo deploys diários com segurança, o que acelerou o feedback de produto.',
-          metricas: ['-60% no tempo de deploy', '5x mais deploys por semana', '0 incidentes em 3 meses'],
-          tecnologias: ['Angular', 'GitHub Actions', 'Docker', 'TypeScript'],
-        };
+    try {
+      const response = await firstValueFrom(
+        this.http.post<BragApiResponse>('/api/brag', { definition }),
+      );
 
-        this.brags.update((list) => [brag, ...list]);
-        this.loading.set(false);
-        resolve();
-      }, MOCK_DELAY_MS);
-    });
+      const brag: Brag = {
+        id: response.id ?? crypto.randomUUID(),
+        titulo: response.title,
+        contexto: response.context,
+        impacto: response.businessImpact,
+        metricas: response.metrics,
+        tecnologias: response.technologiesUsed,
+      };
+
+      this.brags.update((list) => [brag, ...list]);
+    } catch (err) {
+      console.error('Failed to generate brag:', err);
+      this.error.set('Não foi possível gerar o brag. Tente novamente.');
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   getById(id: string): Brag | undefined {

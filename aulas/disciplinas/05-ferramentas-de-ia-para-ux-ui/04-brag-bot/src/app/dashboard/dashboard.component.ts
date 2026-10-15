@@ -15,7 +15,7 @@ export class DashboardComponent {
   protected async distill() {
     const text = this.prompt().trim();
     if (!text || this.bragService.loading()) return;
-    await this.bragService.generateMockBrag(text);
+    await this.bragService.generateBrag(text);
     this.prompt.set('');
   }
 }
